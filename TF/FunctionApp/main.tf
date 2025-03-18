@@ -64,6 +64,9 @@ resource "azurerm_linux_function_app" "example_function_app" {
     application_stack {
       powershell_core_version = "7.4"
     }
+    cors {
+      allowed_origins = ["portal.azure.com"]
+    }
   }
 
   identity {
