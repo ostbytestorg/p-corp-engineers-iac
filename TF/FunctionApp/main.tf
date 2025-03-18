@@ -64,22 +64,14 @@ resource "azurerm_linux_function_app" "example_function_app" {
     application_stack {
       powershell_core_version = "7.4"
     }
+    cors {
+      allowed_origins = ["portal.azure.com"]
+    }
   }
 
   identity {
     type = "SystemAssigned" # Use managed identity over access keys
   }
-}
-
-# allow portal in CORS to a
-resource "azurerm_app_service_cors" "function_cors" {
-  resource_group_name = azurerm_resource_group.rg_function_app.name
-  app_service_name    = azurerm_function_app.example_function_app.name
-
-  allowed_origins = [
-    "https://portal.azure.com",
-    # add additional origins if needed
-  ]
 }
 
 resource "azurerm_role_assignment" "function_app_role" {
