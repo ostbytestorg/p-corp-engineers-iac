@@ -71,3 +71,13 @@ resource "azurerm_linux_function_app" "example_function_app" {
     type = "SystemAssigned" # Use managed identity over access keys
   }
 }
+
+resource "azurerm_role_assignment" "function_app_role" {
+  scope                = azurerm_storage_account.function_app_storage_account.id
+  role_definition_name = "Storage Blob Data Contributor"
+
+  principal_id         = azurerm_linux_function_app.example_function_app.identity.0.principal_id #Principle ID of the function app
+  depends_on = [
+    azurerm_linux_function_app.example_function_app # Ensure the fucntion app is fully provisioned before assigning roles
+  ]
+}
