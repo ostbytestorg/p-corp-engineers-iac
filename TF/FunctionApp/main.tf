@@ -42,7 +42,7 @@ resource "azurerm_service_plan" "function_app_service_plan" {
   location            = azurerm_resource_group.rg_function_app.location
   resource_group_name = azurerm_resource_group.rg_function_app.name
   os_type             = "Linux"
-  sku_name            = "F1"
+  sku_name            = "B1"
 }
 
 resource "azurerm_linux_function_app" "example_function_app" {
