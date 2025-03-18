@@ -18,55 +18,6 @@ function Write-LogAndExit {
     return
 }
 
-function Test-UserInApproverGroup {
-    param(
-        [string]$UserObjectId,
-        [string]$AccessToken
-    )
-    
-    try {
-        # Check group membership using existing access token
-        $graphUri = "https://graph.microsoft.com/v1.0/groups/$approverGroupId/members/$UserObjectId/`$ref"
-        $headers = @{
-            "Authorization" = "Bearer $AccessToken"
-            "Content-Type" = "application/json"
-        }
-
-        try {
-            $response = Invoke-RestMethod -Uri $graphUri -Headers $headers -Method Get
-            Write-Host "User is member of approver group"
-            return $true
-        }
-        catch {
-            if ($_.Exception.Response.StatusCode -eq 404) {
-                Write-Host "User is not member of approver group"
-                return $false
-            }
-            Write-Host "Error checking group membership: $($_.Exception.Message)"
-            throw
-        }
-    }
-    catch {
-        Write-Host "Error in Test-UserInApproverGroup: $($_.Exception.Message)"
-        return $false
-    }
-}
-
-# Validate authorization
-if (-not $Request.Headers.Authorization) {
-    Write-LogAndExit -Message "No Authorization header found" -StatusCode ([System.Net.HttpStatusCode]::Unauthorized)
-    return
-}
-
-# Get user claims from Easy Auth headers
-$userPrincipalName = $Request.Headers.'X-MS-CLIENT-PRINCIPAL-NAME'
-$userObjectId = $Request.Headers.'X-MS-CLIENT-PRINCIPAL-ID'
-
-if (-not $userPrincipalName -or -not $userObjectId) {
-    Write-LogAndExit -Message "Missing user principal information" -StatusCode ([System.Net.HttpStatusCode]::Unauthorized)
-    return
-}
-
 # Access properties from the deserialized JSON payload
 $groupName = $Request.Body.groupName
 $description = $Request.Body.description
