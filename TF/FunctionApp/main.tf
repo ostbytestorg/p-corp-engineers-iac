@@ -7,8 +7,8 @@ data "azurerm_client_config" "current" {}
 # Create ZIP of function app code
 data "archive_file" "function_app_zip" {
   type        = "zip"
-  source_dir  = "./TF/FunctionApp/FUNCTION_APP_CODE"
-  output_path = "./TF/FunctionApp/FUNCTION_APP_CODE.zip"
+  source_dir  = "./FUNCTION_APP_CODE"
+  output_path = "./FUNCTION_APP_CODE.zip"
 }
 
 resource "azurerm_resource_group" "rg_function_app" {
