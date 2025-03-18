@@ -3,7 +3,7 @@
 bin
 obj
 appsettings.json
-TF/FunctionApp/FUNCTION_APP_CODE/**
+TF/FunctionApp/FUNCTION_APP_CODE/local.settings.json
 
 # Azurite artifacts
 __blobstorage__
