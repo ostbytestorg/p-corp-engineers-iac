@@ -1,4 +1,4 @@
-name: Deploy RG via Terraform
+name: Deploy FunctionApp via TF
 
 permissions:
   id-token: write
@@ -8,11 +8,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths: 
-        - "TF/DEMO/**"
+        - "TF/FunctionApp/**"
   push:
     branches: [ main ]
     paths: 
-        - "TF/DEMO/**"
+        - "TF/FunctionApp/**"
 
   workflow_dispatch:
 
@@ -34,6 +34,6 @@ jobs:
     needs: azure-login
     uses: ostbytestorg/tf-buildtemplate/.github/workflows/tf-plan-apply.yml@main
     with:
-      tfDirectory: "./TF/DEMO"   # Folder containing our Terraform config
+      tfDirectory: "./TF/FunctionApp"   # Folder containing our Terraform config
       jobEnvironment: "Production-plan"
-      tfStateKey: "demo.tfstate"
+      tfStateKey: "function.tfstate"
