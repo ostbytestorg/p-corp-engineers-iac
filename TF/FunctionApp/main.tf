@@ -58,8 +58,6 @@ resource "azurerm_linux_function_app" "example_function_app" {
     "AzureWebJobsStorage__accountName" = azurerm_storage_account.function_app_storage_account.name
     "HASH"                             = base64encode(filesha256("./FUNCTION_APP_CODE.zip"))
     "WEBSITE_RUN_FROM_PACKAGE"         = azurerm_storage_blob.storage_blob_function.url
-    "FUNCTIONS_WORKER_RUNTIME"         = "powershell" # Set runtime to PowerShell
-    "FUNCTIONS_EXTENSION_VERSION"      = "~4"         # Recommended Functions runtime version
   }
 
   site_config {
