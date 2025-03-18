@@ -8,11 +8,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths: 
-        - "TF/DEMO/**"
+        - "TF/FunctionApp/**"
   push:
     branches: [ main ]
     paths: 
-        - "TF/DEMO/**"
+        - "TF/FunctionApp/**"
 
   workflow_dispatch:
 
