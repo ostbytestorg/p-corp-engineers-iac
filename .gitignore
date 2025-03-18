@@ -1,0 +1,14 @@
+
+# Azure Functions artifacts
+bin
+obj
+appsettings.json
+TF/FunctionApp/FUNCTION_APP_CODE/**
+
+# Azurite artifacts
+__blobstorage__
+__queuestorage__
+__azurite_db*__.json
+
+# local files
+scratch.ps1
