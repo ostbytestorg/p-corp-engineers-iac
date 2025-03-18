@@ -4,13 +4,6 @@ terraform {
 
 data "azurerm_client_config" "current" {}
 
-# Create ZIP of function app code
-data "archive_file" "function_app_zip" {
-  type        = "zip"
-  source_dir  = "./FUNCTION_APP_CODE"
-  output_path = "./FUNCTION_APP_CODE.zip"
-}
-
 resource "azurerm_resource_group" "rg_function_app" {
   name     = "rg-tf-functionapp"
   location = "norwayeast"
@@ -37,8 +30,8 @@ resource "azurerm_storage_container" "function_code_container" {
 # upload the zipped file to the container
 resource "azurerm_storage_blob" "storage_blob_function" {
   name                   = "function_app_code.zip" # name of the blob in the contianer
-  source                 =  data.archive_file.function_app_zip.output_path # path to the zip file
-  content_md5            = filemd5(data.archive_file.function_app_zip.output_path) # check if the zip file has changed
+  source                 =  "./FUNCTION_APP_CODE.ZIP" # path to the zip file
+  content_md5            = filemd5("./FUNCTION_APP_CODE.ZIP") # check if the zip file has changed
   storage_account_name   = azurerm_storage_account.function_app_storage_account.name
   storage_container_name = "function-code"
   type                   = "Block"
