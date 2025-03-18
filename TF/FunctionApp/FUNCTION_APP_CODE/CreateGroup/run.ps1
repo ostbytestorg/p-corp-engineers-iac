@@ -2,9 +2,6 @@ param($Request, $TriggerMetadata)
 
 Write-Host "Processing CreateGroup function request..."
 
-# Configuration
-$approverGroupId = "ceb94831-712d-464b-a007-a2bb929b20c9" # grp-approvers
-
 function Write-LogAndExit {
     param(
         [string]$Message,
