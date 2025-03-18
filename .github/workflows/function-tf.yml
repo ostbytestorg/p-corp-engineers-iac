@@ -1,4 +1,4 @@
-name: Deploy RG via Terraform
+name: Deploy FunctionApp via TF
 
 permissions:
   id-token: write
