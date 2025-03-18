@@ -42,7 +42,7 @@ resource "azurerm_service_plan" "function_app_service_plan" {
   location            = azurerm_resource_group.rg_function_app.location
   resource_group_name = azurerm_resource_group.rg_function_app.name
   os_type             = "Linux"
-  sku_name            = "P0v3"
+  sku_name            = "F1"
 }
 
 resource "azurerm_linux_function_app" "example_function_app" {
@@ -61,7 +61,6 @@ resource "azurerm_linux_function_app" "example_function_app" {
   }
 
   site_config {
-    always_on = true # Prevents idle timeout (important for PowerShell triggers, timers, etc.)
     application_stack {
       powershell_core_version = "7.4"
     }
