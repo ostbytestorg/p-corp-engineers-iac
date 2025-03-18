@@ -37,8 +37,8 @@ resource "azurerm_storage_container" "function_code_container" {
 # upload the zipped file to the container
 resource "azurerm_storage_blob" "storage_blob_function" {
   name                   = "function_app_code.zip" # name of the blob in the contianer
-  source                 =  function_app_zip.output_path # path to the zip file
-  content_md5            = filemd5(function_app_zip.output_path) # check if the zip file has changed
+  source                 =  data.archive_file.function_app_zip.output_path # path to the zip file
+  content_md5            = filemd5(data.archive_file.function_app_zip.output_path) # check if the zip file has changed
   storage_account_name   = azurerm_storage_account.function_app_storage_account.name
   storage_container_name = "function-code"
   type                   = "Block"
