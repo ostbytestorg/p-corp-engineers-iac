@@ -37,3 +37,25 @@ jobs:
       tfDirectory: "./TF/FunctionApp"   # Folder containing our Terraform config
       jobEnvironment: "Production-plan"
       tfStateKey: "function.tfstate"
+
+  deploy-functions:
+    needs: terraform
+    runs-on: ubuntu-latest
+    environment: Production-plan
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure Login for Function Deployment
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.CLIENTID }}
+          tenant-id: ${{ vars.TENANTID }}
+          enable-AzPSSession: true
+          allow-no-subscriptions: true
+
+      - name: Deploy PowerShell Function App Code
+        uses: Azure/functions-action@v1
+        with:
+          app-name: "my-function-app-name"   # Explicit function app name reference
+          package: './FunctionApp'  
