@@ -1,0 +1,31 @@
+name: Deploy functions to function app
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "FunctionApp/FUNCTION_APP_CODE/**"
+  workflow_dispatch:
+
+jobs:
+  deploy-functions:
+    runs-on: ubuntu-latest
+    environment: Production-plan
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Azure Login for Function Deployment
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.CLIENTID }}
+          tenant-id: ${{ vars.TENANTID }}
+          enable-AzPSSession: true
+          allow-no-subscriptions: true
+
+      - name: Deploy Function App Code
+        uses: Azure/functions-action@v1
+        with:
+          app-name: "sicratffunc001"        # Replace with your configured Function App name
+          package: "./FunctionApp/FUNCTION_APP_CODE"                # Folder containing your function code
