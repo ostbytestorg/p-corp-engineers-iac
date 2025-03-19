@@ -2,7 +2,7 @@
 
 This guide explains how to assign Microsoft Graph app permissions to a Managed Service Identity (MSI).
 
-## 1. Assign an App Role to the MSI
+## 1. How to assign an App Role to the MSI
 
 Make a `POST` request to assign an app role to the MSI's service principal:
 
@@ -20,7 +20,7 @@ POST https://graph.microsoft.com/v1.0/servicePrincipals/<MSI_SERVICE_PRINCIPAL_O
 }
 ~~~
 
-## 2. Retrieve the Required Object IDs and App Roles
+## 2. How to retrieve the Required Object IDs and App Roles
 
 ### Get the MS Graph Service Principal Object ID
 

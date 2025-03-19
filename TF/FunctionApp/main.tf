@@ -5,15 +5,13 @@ terraform {
 data "azurerm_client_config" "current" {}
 
 resource "azurerm_resource_group" "rg_function_app" {
-  name     = "rg-tf-functionapp"
-  location = "norwayeast"
-  tags = {
-    "configuration" = "terraform"
-  }
+  name     = var.resource_group_name
+  location = var.location
+  tags     = var.tags
 }
 
 resource "azurerm_storage_account" "function_app_storage_account" {
-  name                          = "sttfsicrafuncapp001"
+  name                          = var.storage_account_name
   resource_group_name           = azurerm_resource_group.rg_function_app.name
   location                      = azurerm_resource_group.rg_function_app.location
   account_tier                  = "Standard"
@@ -22,23 +20,23 @@ resource "azurerm_storage_account" "function_app_storage_account" {
 }
 
 resource "azurerm_storage_container" "function_code_container" {
-  name                  = "function-code"
+  name                  = var.storage_container_name
   storage_account_id    = azurerm_storage_account.function_app_storage_account.id
   container_access_type = "private"
 }
 
-# upload the zipped file to the container
+# Upload the zipped file to the container
 resource "azurerm_storage_blob" "storage_blob_function" {
-  name                   = "function_app_code.zip"            # name of the blob in the contianer
-  source                 = "./FUNCTION_APP_CODE.zip"          # path to the zip file
-  content_md5            = filemd5("./FUNCTION_APP_CODE.zip") # check if the zip file has changed
+  name                   = var.function_blob_name
+  source                 = var.zip_file_path
+  content_md5            = filemd5(var.zip_file_path)
   storage_account_name   = azurerm_storage_account.function_app_storage_account.name
-  storage_container_name = "function-code"
+  storage_container_name = var.storage_container_name
   type                   = "Block"
 }
 
 resource "azurerm_service_plan" "function_app_service_plan" {
-  name                = "appplan-sicratffunc001"
+  name                = var.service_plan_name
   location            = azurerm_resource_group.rg_function_app.location
   resource_group_name = azurerm_resource_group.rg_function_app.name
   os_type             = "Linux"
@@ -46,7 +44,7 @@ resource "azurerm_service_plan" "function_app_service_plan" {
 }
 
 resource "azurerm_linux_function_app" "example_function_app" {
-  name                          = "sicratffunc001"
+  name                          = var.function_app_name
   location                      = azurerm_resource_group.rg_function_app.location
   resource_group_name           = azurerm_resource_group.rg_function_app.name
   service_plan_id               = azurerm_service_plan.function_app_service_plan.id
@@ -56,7 +54,7 @@ resource "azurerm_linux_function_app" "example_function_app" {
 
   app_settings = {
     "AzureWebJobsStorage__accountName" = azurerm_storage_account.function_app_storage_account.name
-    "HASH"                             = base64encode(filesha256("./FUNCTION_APP_CODE.zip"))
+    "HASH"                             = base64encode(filesha256(var.zip_file_path))
     "WEBSITE_RUN_FROM_PACKAGE"         = azurerm_storage_blob.storage_blob_function.url
   }
 
@@ -70,16 +68,16 @@ resource "azurerm_linux_function_app" "example_function_app" {
   }
 
   identity {
-    type = "SystemAssigned" # Use managed identity over access keys
+    type = "SystemAssigned"
   }
 }
 
 resource "azurerm_role_assignment" "function_app_role" {
   scope                = azurerm_storage_account.function_app_storage_account.id
   role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_linux_function_app.example_function_app.identity.0.principal_id
 
-  principal_id         = azurerm_linux_function_app.example_function_app.identity.0.principal_id #Principle ID of the function app
   depends_on = [
-    azurerm_linux_function_app.example_function_app # Ensure the fucntion app is fully provisioned before assigning roles
+    azurerm_linux_function_app.example_function_app
   ]
 }
