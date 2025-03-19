@@ -32,4 +32,4 @@ jobs:
         uses: Azure/functions-action@v1
         with:
           app-name: "sicratffunc001"        # Replace with your configured Function App name
-          package: "./FunctionApp/FUNCTION_APP_CODE"                # Folder containing your function code
+          package: "./TF/FunctionApp/FUNCTION_APP_CODE"                # Folder containing your function code
