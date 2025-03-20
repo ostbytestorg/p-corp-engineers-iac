@@ -32,7 +32,7 @@ jobs:
 
   terraform:
     needs: azure-login
-    uses: ostbytestorg/tf-buildtemplate/.github/workflows/tf-plan-apply.yml@main
+    uses: ostbytestorg/tf-buildtemplate/.github/workflows/tf-plan-apply.yml@v1.0.0
     with:
       tfDirectory: "./TF/FunctionApp"   # Folder containing our Terraform config
       jobEnvironment: "Production-plan"
