@@ -22,11 +22,11 @@ jobs:
       group: vnet-spoke-production-engineers
     environment: Production-plan
     steps:
-    - name: Azure Login (Federated credentials)
-      uses: azure/login@v2
-      with:
-          client-id: ${{ vars.CLIENTID }} # LZ SP clientId
-          tenant-id: ${{ vars.TENANTID }} # your Azure AD tenant
+      - name: Azure Login (Federated credentials)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.CLIENTID }}
+          tenant-id: ${{ vars.TENANTID }}
           enable-AzPSSession: true
           allow-no-subscriptions: true
 
@@ -34,6 +34,25 @@ jobs:
     needs: azure-login
     uses: ostbytestorg/tf-buildtemplate/.github/workflows/tf-plan-apply.yml@main
     with:
-      tfDirectory: "./TF/AKS"   # Folder containing our Terraform config
+      tfDirectory: "./TF/AKS"
       jobEnvironment: "Production-plan"
       tfStateKey: "aks.tfstate"
+
+  configure-kube:
+    needs: terraform
+    # Only run this job when the event is a push to 'main' or on workflow dispatch
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
+    runs-on:
+      group: vnet-spoke-production-engineers
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Extract kube_config and configure kubectl
+        run: |
+          cd TF/AKS
+          terraform output -raw kube_config > kubeconfig.yaml
+          echo "KUBECONFIG=$(pwd)/TF/AKS/kubeconfig.yaml" >> $GITHUB_ENV
+
+      - name: Validate Cluster Connectivity
+        run: kubectl get nodes
