@@ -5,10 +5,6 @@ permissions:
   contents: read
 
 on:
-    pull_request:
-        types: [opened, synchronize, reopened]
-        paths:
-            - "TF/AKS/**"
     workflow_dispatch:
 
 jobs:
