@@ -15,10 +15,8 @@ variable "tags" {
 
 variable "aks_cluster_name" {
   type    = string
-  default = "aks-poc-cluster"
 }
 
 variable "acr_name" {
   type    = string
-  default = "akspocacr" # Must be globally unique. Adjust accordingly.
 }
