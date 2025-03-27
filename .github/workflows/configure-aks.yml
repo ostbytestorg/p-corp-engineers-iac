@@ -7,10 +7,9 @@ permissions:
 on:
     pull_request:
         types: [opened, synchronize, reopened]
-        paths: 
+        paths:
             - "TF/AKS/**"
     workflow_dispatch:
-
 
 jobs:
   configure-kube:
