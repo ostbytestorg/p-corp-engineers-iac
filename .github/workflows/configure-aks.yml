@@ -1,0 +1,43 @@
+name: Configure AKS Cluster
+
+on:
+  workflow_dispatch:
+
+jobs:
+  configure-kube:
+    runs-on:
+      group: vnet-spoke-production-engineers
+    environment: Production-plan
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Azure Login (Federated credentials)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.CLIENTID }}
+          tenant-id: ${{ vars.TENANTID }}
+          allow-no-subscriptions: true
+
+      - name: Set AKS Context
+        uses: azure/aks-set-context@v4
+        with:
+          cluster-name: aksostbyengineeering001
+          resource-group: rg-tf-aks
+
+      - name: Install kubelogin
+        run: |
+          echo "Downloading kubelogin..."
+          curl -L -o kubelogin.zip https://github.com/Azure/kubelogin/releases/download/v0.0.28/kubelogin-linux-amd64.zip
+          unzip kubelogin.zip
+          chmod +x bin/linux_amd64/kubelogin
+          sudo mv bin/linux_amd64/kubelogin /usr/local/bin/kubelogin
+          kubelogin version
+
+      - name: Install ArgoCD
+        run: |
+          kubectl create namespace argocd || true
+          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+      - name: Validate Cluster Connectivity
+        run: kubectl get nodes
