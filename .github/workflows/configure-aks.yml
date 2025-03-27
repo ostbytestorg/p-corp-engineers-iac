@@ -42,7 +42,10 @@ jobs:
           chmod +x bin/linux_amd64/kubelogin
           sudo mv bin/linux_amd64/kubelogin /usr/local/bin/kubelogin
           kubelogin --version
-
+      - name: Convert kubeconfig for noninteractive login using azurecli mode
+        run: |
+          echo "Converting kubeconfig to noninteractive azurecli mode..."
+          kubelogin convert-kubeconfig --login-mode=azurecli
       - name: Install ArgoCD
         run: |
           kubectl create namespace argocd || true
