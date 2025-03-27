@@ -13,7 +13,7 @@ resource "azuread_group" "entra_admin_group" {
 
 # Add the currently running service principal to the above group
 resource "azuread_group_member" "entra_admin_member" {
-  group_object_id  = azuread_group.entra_admin_group.id
+  group_object_id  = azuread_group.entra_admin_group.object_id
   member_object_id = data.azurerm_client_config.current.object_id
 }
 
