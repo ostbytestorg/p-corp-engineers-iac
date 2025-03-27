@@ -48,11 +48,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Extract kube_config and configure kubectl
+      # Set AKS context using the official Azure action
+      - name: Set AKS context
+        uses: azure/aks-set-context@v4
+        with:
+          cluster-name: aksostbyengineeering001
+          resource-group: rg-tf-aks
+
+      # Now that the context is set, install ArgoCD
+      - name: Install ArgoCD
         run: |
-          cd TF/AKS
-          terraform output -raw kube_config > kubeconfig.yaml
-          echo "KUBECONFIG=$(pwd)/TF/AKS/kubeconfig.yaml" >> $GITHUB_ENV
+          kubectl create namespace argocd || true
+          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
       - name: Validate Cluster Connectivity
         run: kubectl get nodes
