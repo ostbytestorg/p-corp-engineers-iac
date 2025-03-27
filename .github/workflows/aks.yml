@@ -44,10 +44,17 @@ jobs:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
     runs-on:
       group: vnet-spoke-production-engineers
+    environment: Production-Plan
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
+      
+      - name: Azure Login (Federated credentials)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.CLIENTID }}
+          tenant-id: ${{ vars.TENANTID }}
+          allow-no-subscriptions: true
       # Set AKS context using the official Azure action
       - name: Set AKS context
         uses: azure/aks-set-context@v4
