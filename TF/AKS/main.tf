@@ -4,6 +4,14 @@ terraform {
 
 data "azurerm_client_config" "current" {}
 
+# entra group for admins
+
+resource "azuread_group" "entra_admin_group" {
+  display_name = "grp-aks-admin"
+  security_enabled = true
+}
+
+# resourcegroup for aks and acr
 resource "azurerm_resource_group" "rg" {
   name     = var.resource_group_name
   location = var.location
@@ -38,6 +46,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
 
   azure_active_directory_role_based_access_control {
     azure_rbac_enabled = true
+    admin_group_object_ids = [ azuread_group.entra_admin_group.id ]
+    tenant_id = data.azurerm_client_config.current.tenant_id
   }
 
 }
