@@ -45,7 +45,7 @@ jobs:
       - name: Convert kubeconfig for noninteractive login using azurecli mode
         run: |
           echo "Converting kubeconfig to noninteractive azurecli mode..."
-          kubelogin convert-kubeconfig --login-mode=azurecli
+          kubelogin convert-kubeconfig --login azurecli
       - name: Install ArgoCD
         run: |
           kubectl create namespace argocd || true
