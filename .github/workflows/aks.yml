@@ -6,7 +6,7 @@ permissions:
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, reopened]
     paths: 
         - "TF/AKS/**"
   push:
@@ -22,11 +22,11 @@ jobs:
       group: vnet-spoke-production-engineers
     environment: Production-plan
     steps:
-    - name: Azure Login (Federated credentials)
-      uses: azure/login@v2
-      with:
-          client-id: ${{ vars.CLIENTID }} # LZ SP clientId
-          tenant-id: ${{ vars.TENANTID }} # your Azure AD tenant
+      - name: Azure Login (Federated credentials)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.CLIENTID }}
+          tenant-id: ${{ vars.TENANTID }}
           enable-AzPSSession: true
           allow-no-subscriptions: true
 
@@ -34,6 +34,6 @@ jobs:
     needs: azure-login
     uses: ostbytestorg/tf-buildtemplate/.github/workflows/tf-plan-apply.yml@main
     with:
-      tfDirectory: "./TF/AKS"   # Folder containing our Terraform config
+      tfDirectory: "./TF/AKS"
       jobEnvironment: "Production-plan"
       tfStateKey: "aks.tfstate"
