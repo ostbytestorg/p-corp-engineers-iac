@@ -1,4 +1,4 @@
-name: Deploy RG via Terraform
+name: Deploy AKS & ACR via Terraform
 
 permissions:
   id-token: write
