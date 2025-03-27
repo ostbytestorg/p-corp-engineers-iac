@@ -1,7 +1,12 @@
 name: Configure AKS Cluster
 
 on:
-  workflow_dispatch:
+    pull_request:
+        types: [opened, synchronize, reopened]
+        paths: 
+            - "TF/AKS/**"
+    workflow_dispatch:
+
 
 jobs:
   configure-kube:
