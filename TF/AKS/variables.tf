@@ -1,0 +1,24 @@
+variable "location" {
+  description = "Azure region to deploy resources"
+  type        = string
+}
+
+variable "resource_group_name" {
+  description = "Name of the Azure resource group"
+  type        = string
+}
+
+variable "tags" {
+  description = "Tags to use on resources"
+  type        = map(string)
+}
+
+variable "aks_cluster_name" {
+  type    = string
+  default = "aks-poc-cluster"
+}
+
+variable "acr_name" {
+  type    = string
+  default = "akspocacr" # Must be globally unique. Adjust accordingly.
+}
