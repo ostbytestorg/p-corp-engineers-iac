@@ -11,6 +11,12 @@ resource "azuread_group" "entra_admin_group" {
   security_enabled = true
 }
 
+# Add the currently running service principal to the above group
+resource "azuread_group_member" "entra_admin_member" {
+  group_object_id  = azuread_group.entra_admin_group.id
+  member_object_id = data.azurerm_client_config.current.object_id
+}
+
 # resourcegroup for aks and acr
 resource "azurerm_resource_group" "rg" {
   name     = var.resource_group_name
