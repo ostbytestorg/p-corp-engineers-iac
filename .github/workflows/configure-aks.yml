@@ -82,7 +82,7 @@ jobs:
           ARGO_TENANT_ID: ${{ secrets.ARGO_TENANT_ID }}
           ARGO_CLIENT_ID: ${{ secrets.ARGO_CLIENT_ID }}
           ARGO_CLIENT_SECRET: ${{ secrets.ARGO_CLIENT_SECRET }}
-          ARGOCD_SERVER_URL: "https://argocd.example.com"  # Update with your ArgoCD public URL
+          ARGOCD_SERVER_URL: ${{ env.ARGOCD_SERVER_URL }}  # Update with your ArgoCD public URL
         run: |
           # Update argocd-cm to configure Dex with an OIDC connector for Azure AD.
           cat <<EOF | kubectl apply -f -
