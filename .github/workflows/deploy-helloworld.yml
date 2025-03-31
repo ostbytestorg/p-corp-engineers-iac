@@ -1,6 +1,10 @@
 # File: .github/workflows/deploy-helloworld.yml
 name: Deploy HELLOWORLD to ACR
 
+permissions:
+  id-token: write
+  contents: read
+
 # This workflow runs when there are changes to files in the HELLOWORLD folder
 on:
   push:
