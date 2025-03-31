@@ -18,4 +18,4 @@ jobs:
       app-folder: "APPS/HELLOWORLD"
       image-name: "helloworld"
       acr-registry: "acrostbyengineering001"  # Replace with your actual ACR name
-      tag: "latest"
+      tag: "1.0.0"

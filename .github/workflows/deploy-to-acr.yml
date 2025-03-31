@@ -55,6 +55,17 @@ jobs:
         run: |
           docker tag ${{ inputs.image-name }}:${{ inputs.tag }} ${{ inputs.acr-registry }}.azurecr.io/${{ inputs.image-name }}:${{ inputs.tag }}
 
+      - name: Check if tag exists in ACR
+        id: check_tag
+        run: |
+            EXISTING_TAG=$(az acr repository show-tags --name ${{ inputs.acr-registry }} --repository ${{ inputs.image-name }} --query "[?contains(@, '${{ inputs.tag }}')]" -o tsv)
+            if [ -n "$EXISTING_TAG" ]; then
+              echo "Tag '${{ inputs.tag }}' already exists in ACR. Aborting push to prevent accidental overwrite."
+              exit 1
+            else
+              echo "No existing tag '${{ inputs.tag }}' found. Proceeding..."
+            fi
+
       - name: Push Docker image to ACR
         run: |
           docker push ${{ inputs.acr-registry }}.azurecr.io/${{ inputs.image-name }}:${{ inputs.tag }}
