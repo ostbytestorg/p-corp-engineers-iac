@@ -17,5 +17,5 @@ jobs:
     with:
       app-folder: "APPS/HELLOWORLD"
       image-name: "helloworld"
-      acr-registry: "acrostbyengineering001.azurecr.io"  # Replace with your actual ACR name
+      acr-registry: "acrostbyengineering001"  # Replace with your actual ACR name
       tag: "latest"
