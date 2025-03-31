@@ -5,7 +5,7 @@ permissions:
   contents: read
 
 on:
-    workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
   configure-kube:
@@ -37,14 +37,86 @@ jobs:
           chmod +x bin/linux_amd64/kubelogin
           sudo mv bin/linux_amd64/kubelogin /usr/local/bin/kubelogin
           kubelogin --version
+
       - name: Convert kubeconfig for noninteractive login using azurecli mode
         run: |
           echo "Converting kubeconfig to noninteractive azurecli mode..."
           kubelogin convert-kubeconfig --login azurecli
+
       - name: Install ArgoCD
         run: |
           kubectl create namespace argocd || true
           kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
-      - name: Validate Cluster Connectivity
-        run: kubectl get nodes
+
+      # --- ArgoCD AAD (OIDC) Authentication Configuration Steps ---
+
+      - name: Wait for ArgoCD Server to be Ready
+        run: |
+          echo "Waiting for ArgoCD pods to be ready..."
+          kubectl -n argocd rollout status deploy/argocd-server --timeout=300s
+
+      - name: Add lb and publicIP to ArgoCD
+        run: |
+          kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+      - name: Get ArgoCD Public IP and Construct ARGOCD_SERVER_URL
+        id: get-argocd-ip
+        run: |
+            external_ip=""
+            # Wait until the external IP is assigned
+            while [ -z "$external_ip" ]; do
+              echo "Waiting for external IP..."
+              external_ip=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+              [ -z "$external_ip" ] && sleep 10
+            done
+            echo "ArgoCD Public IP: $external_ip"
+            echo "ARGOCD_SERVER_URL=https://${external_ip}" >> $GITHUB_ENV
+          # This makes ARGOCD_SERVER_URL available to subsequent steps.   
+      - name: Validate Cluster Connectivity and ARGO config
+        run: |
+          kubectl get nodes
+          kubectl get svc -n argocd argocd-server
+
+      - name: Configure ArgoCD for Azure AD SSO using ARGO_ variables
+        env:
+          ARGO_TENANT_ID: ${{ secrets.ARGO_TENANT_ID }}
+          ARGO_CLIENT_ID: ${{ secrets.ARGO_CLIENT_ID }}
+          ARGO_CLIENT_SECRET: ${{ secrets.ARGO_CLIENT_SECRET }}
+          ARGOCD_SERVER_URL: "https://argocd.example.com"  # Update with your ArgoCD public URL
+        run: |
+          # Update argocd-cm to configure Dex with an OIDC connector for Azure AD.
+          cat <<EOF | kubectl apply -f -
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: argocd-cm
+            namespace: argocd
+          data:
+            dex.config: |
+              connectors:
+              - type: oidc
+                id: azure
+                name: Azure AD
+                config:
+                  issuer: https://login.microsoftonline.com/${ARGO_TENANT_ID}/v2.0
+                  clientID: ${ARGO_CLIENT_ID}
+                  clientSecret: ${ARGO_CLIENT_SECRET}
+                  redirectURI: ${ARGOCD_SERVER_URL}/api/dex/callback
+          EOF
+
+      - name: Configure ArgoCD RBAC for Azure AD SSO (Optional)
+        run: |
+          # Example: map an Azure AD security group (by object ID) to an ArgoCD role.
+          # Replace <SECURITY_GROUP_OBJECT_ID> with the actual group object ID.
+          cat <<EOF | kubectl apply -f -
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: argocd-rbac-cm
+            namespace: argocd
+          data:
+            policy.csv: |
+              p, role:readonly, applications, get, */*, allow
+              p, role:admin, *, *, *, allow
+              g, b55ac768-519d-4e6e-bab4-8e62dd85b3c1, role:readonly
+          EOF
