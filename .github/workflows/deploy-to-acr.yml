@@ -1,5 +1,10 @@
 # File: .github/workflows/deploy-to-acr.yml
 name: Deploy to ACR
+
+permissions:
+  id-token: write
+  contents: read
+
 # This workflow is designed to be called from other workflows
 on:
   workflow_call:
