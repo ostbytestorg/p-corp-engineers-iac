@@ -1,0 +1,17 @@
+# File: .github/workflows/deploy-helloworld.yml
+name: Deploy HELLOWORLD to ACR
+
+# This workflow runs when there are changes to files in the HELLOWORLD folder
+on:
+  push:
+    paths:
+      - 'APPS/HELLOWORLD/**'
+  workflow_dispatch:
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy-to-acr.yml
+    with:
+      app-folder: "APPS/HELLOWORLD"
+      image-name: "helloworld"
+      acr-registry: "acrostbyengineering001.azurecr.io"  # Replace with your actual ACR name
+      tag: "latest"

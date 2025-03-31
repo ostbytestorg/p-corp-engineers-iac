@@ -1,0 +1,60 @@
+# File: .github/workflows/deploy-to-acr.yml
+name: Deploy to ACR
+
+permissions:
+  id-token: write
+  contents: read
+
+# This workflow is designed to be called from other workflows
+on:
+  workflow_call:
+    inputs:
+      app-folder:              # Local folder where the app is located, e.g., "APPS/HELLOWORLD"
+        description: "Path to the app's root folder"
+        required: true
+        type: string
+      image-name:              # Image name for tagging (e.g., "helloworld")
+        description: "Docker image name without registry"
+        required: true
+        type: string
+      acr-registry:            # ACR name without the domain part (e.g., "myacr")
+        description: "Azure Container Registry name"
+        required: true
+        type: string
+      tag:                     # Optional tag; defaults to "latest"
+        description: "Docker image tag"
+        required: false
+        default: "latest"
+        type: string
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    environment: Production-plan
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Azure Login (Federated credentials)
+        uses: azure/login@v2
+        with:
+            client-id: ${{ vars.CLIENTID }} # LZ SP clientId
+            tenant-id: ${{ vars.TENANTID }} # your Azure AD tenant
+            allow-no-subscriptions: true
+
+      - name: Log in to ACR
+        run: |
+          az acr login --name ${{ inputs.acr-registry }}
+
+      - name: Build Docker image
+        working-directory: ${{ inputs.app-folder }}
+        run: |
+          docker build -t ${{ inputs.image-name }}:${{ inputs.tag }} .
+
+      - name: Tag Docker image for ACR
+        run: |
+          docker tag ${{ inputs.image-name }}:${{ inputs.tag }} ${{ inputs.acr-registry }}.azurecr.io/${{ inputs.image-name }}:${{ inputs.tag }}
+
+      - name: Push Docker image to ACR
+        run: |
+          docker push ${{ inputs.acr-registry }}.azurecr.io/${{ inputs.image-name }}:${{ inputs.tag }}
