@@ -6,6 +6,11 @@ permissions:
 
 on:
   workflow_dispatch:
+    inputs:
+      argo_admin_group_id:
+        description: "Argo Admin Group name (this group will be granted admin access in ArgoCD)"
+        required: true
+        default: "grp-aks-admin"
 
 jobs:
   configure-kube:
@@ -48,7 +53,6 @@ jobs:
           kubectl create namespace argocd || true
           kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
-
       # --- ArgoCD AAD (OIDC) Authentication Configuration Steps ---
 
       - name: Wait for ArgoCD Server to be Ready
@@ -59,19 +63,19 @@ jobs:
       - name: Add lb and publicIP to ArgoCD
         run: |
           kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+
       - name: Get ArgoCD Public IP and Construct ARGOCD_SERVER_URL
         id: get-argocd-ip
         run: |
-            external_ip=""
-            # Wait until the external IP is assigned
-            while [ -z "$external_ip" ]; do
-              echo "Waiting for external IP..."
-              external_ip=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-              [ -z "$external_ip" ] && sleep 10
-            done
-            echo "ArgoCD Public IP: $external_ip"
-            echo "ARGOCD_SERVER_URL=https://${external_ip}" >> $GITHUB_ENV
-          # This makes ARGOCD_SERVER_URL available to subsequent steps.   
+          external_ip=""
+          while [ -z "$external_ip" ]; do
+            echo "Waiting for external IP..."
+            external_ip=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+            [ -z "$external_ip" ] && sleep 10
+          done
+          echo "ArgoCD Public IP: $external_ip"
+          echo "ARGOCD_SERVER_URL=https://${external_ip}" >> $GITHUB_ENV
+
       - name: Validate Cluster Connectivity and ARGO config
         run: |
           kubectl get nodes
@@ -84,20 +88,18 @@ jobs:
           ARGO_CLIENT_SECRET: ${{ secrets.ARGO_CLIENT_SECRET }}
           ARGOCD_SERVER_URL: ${{ env.ARGOCD_SERVER_URL }}
         run: |
-            cat <<EOF > patch.json
-            {
-              "data": {
-                "dex.config": "connectors:\n- type: microsoft\n  id: microsoft\n  name: Your Company GmbH\n  config:\n    clientID: \"${ARGO_CLIENT_ID}\"\n    clientSecret: \"${ARGO_CLIENT_SECRET}\"\n    redirectURI: \"${ARGOCD_SERVER_URL}/api/dex/callback\"\n    tenant: \"${ARGO_TENANT_ID}\"\n",
-                "url": "${ARGOCD_SERVER_URL}"
-              }
+          cat <<EOF > patch.json
+          {
+            "data": {
+              "dex.config": "connectors:\n- type: microsoft\n  id: microsoft\n  name: Your Company GmbH\n  config:\n    clientID: \"${ARGO_CLIENT_ID}\"\n    clientSecret: \"${ARGO_CLIENT_SECRET}\"\n    redirectURI: \"${ARGOCD_SERVER_URL}/api/dex/callback\"\n    tenant: \"${ARGO_TENANT_ID}\"\n",
+              "url": "${ARGOCD_SERVER_URL}"
             }
-            EOF
-            kubectl patch configmap argocd-cm -n argocd -p "$(cat patch.json)"
+          }
+          EOF
+          kubectl patch configmap argocd-cm -n argocd -p "$(cat patch.json)"
 
-      - name: Configure ArgoCD RBAC for Azure AD SSO (Optional)
+      - name: Configure ArgoCD RBAC for Azure AD SSO
         run: |
-          # Example: map an Azure AD security group (by object ID) to an ArgoCD role.
-          # Replace <SECURITY_GROUP_OBJECT_ID> with the actual group object ID.
           cat <<EOF | kubectl apply -f -
           apiVersion: v1
           kind: ConfigMap
@@ -108,5 +110,5 @@ jobs:
             policy.csv: |
               p, role:readonly, applications, get, */*, allow
               p, role:admin, *, *, *, allow
-              g, b55ac768-519d-4e6e-bab4-8e62dd85b3c1, role:readonly
+              g, ${{ github.event.inputs.argo_admin_group_id }}, role:admin
           EOF
