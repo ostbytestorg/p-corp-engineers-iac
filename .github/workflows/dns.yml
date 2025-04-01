@@ -34,6 +34,6 @@ jobs:
     needs: azure-login
     uses: ostbytestorg/tf-buildtemplate/.github/workflows/tf-plan-apply.yml@main
     with:
-      tfDirectory: "./TF/NDS"   # Folder containing our Terraform config
+      tfDirectory: "./TF/DNS"   # Folder containing our Terraform config
       jobEnvironment: "Production-plan"
       tfStateKey: "dns.tfstate"
