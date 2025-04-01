@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       argo_admin_group_id:
-        description: "Argo Admin Group ID (this group will be granted admin access in ArgoCD)"
+        description: "Argo Admin Group name (this group will be granted admin access in ArgoCD)"
         required: true
-        default: "b55ac768-519d-4e6e-bab4-8e62dd85b3c1"
+        default: "grp-aks-admin"
 
 jobs:
   configure-kube:
