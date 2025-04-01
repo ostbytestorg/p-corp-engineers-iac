@@ -84,14 +84,15 @@ jobs:
           ARGO_CLIENT_SECRET: ${{ secrets.ARGO_CLIENT_SECRET }}
           ARGOCD_SERVER_URL: ${{ env.ARGOCD_SERVER_URL }}
         run: |
-              cat <<EOF > patch.json
-              {
-                "data": {
-                  "dex.config": "connectors:\n- type: microsoft\n  id: microsoft\n  name: ostbymicloud\n  config:\n    clientID: \"${ARGO_CLIENT_ID}\"\n    clientSecret: \"${ARGO_CLIENT_SECRET}\"\n    redirectURI: \"${ARGOCD_SERVER_URL}/api/dex/callback\"\n    tenant: \"${ARGO_TENANT_ID}\"\n"
-                }
+            cat <<EOF > patch.json
+            {
+              "data": {
+                "dex.config": "connectors:\n- type: microsoft\n  id: microsoft\n  name: Your Company GmbH\n  config:\n    clientID: \"${ARGO_CLIENT_ID}\"\n    clientSecret: \"${ARGO_CLIENT_SECRET}\"\n    redirectURI: \"${ARGOCD_SERVER_URL}/api/dex/callback\"\n    tenant: \"${ARGO_TENANT_ID}\"\n",
+                "url": "${ARGOCD_SERVER_URL}"
               }
-              EOF
-              kubectl patch configmap argocd-cm -n argocd -p "$(cat patch.json)"
+            }
+            EOF
+            kubectl patch configmap argocd-cm -n argocd -p "$(cat patch.json)"
 
       - name: Configure ArgoCD RBAC for Azure AD SSO (Optional)
         run: |
