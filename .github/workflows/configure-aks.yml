@@ -159,6 +159,8 @@ jobs:
                 repoURL: https://github.com/ostbytestorg/p-corp-engineers-iac.git
                 targetRevision: FEAT/HTTPS-1
                 path: ARGOCD/infrastructure
+                directory:
+                  recurse: true
               destination:
                 server: https://kubernetes.default.svc
                 namespace: argocd
