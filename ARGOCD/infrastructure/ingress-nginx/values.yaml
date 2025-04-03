@@ -1,0 +1,7 @@
+ingress-nginx:
+  controller:
+    service:
+      type: LoadBalancer  # Or NodePort if that's what you prefer
+    ingressClassResource:
+      name: nginx
+      default: true
