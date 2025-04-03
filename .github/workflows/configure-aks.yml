@@ -192,4 +192,11 @@ jobs:
                 selfHeal: true
               syncOptions:
               - CreateNamespace=true
+              ignoreDifferences:
+            - group: admissionregistration.k8s.io
+              kind: ValidatingWebhookConfiguration
+              name: cert-manager-webhook
+              jsonPointers:
+              - /webhooks/0/rules
+              - /webhooks/0/tolerations
           EOF
