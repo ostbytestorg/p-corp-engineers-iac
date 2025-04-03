@@ -157,7 +157,7 @@ jobs:
               project: default
               source:
                 repoURL: https://github.com/ostbytestorg/p-corp-engineers-iac.git
-                targetRevision: HEAD
+                targetRevision: FEAT/HTTPS-1
                 path: ARGOCD/infrastructure
               destination:
                 server: https://kubernetes.default.svc
