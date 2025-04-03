@@ -1,2 +1,4 @@
 cert-manager:
   installCRDs: true
+  webhook:
+    tolerations: []  # This will explicitly set empty tolerations
