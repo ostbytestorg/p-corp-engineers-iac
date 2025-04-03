@@ -1,12 +1,2 @@
 cert-manager:
   installCRDs: true
-  webhook:
-    tolerations:
-      - key: control-plane
-        operator: NotIn
-        values:
-          - 'true'
-      - key: kubernetes.azure.com/managedby
-        operator: NotIn
-        values:
-          - aks
