@@ -1,0 +1,132 @@
+name: Test HTTPS ArgoCD Ingress
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-argocd-https:
+    runs-on:
+      group: vnet-spoke-production-engineers
+    environment: Production-plan
+    steps:
+      - name: Azure Login (Federated credentials)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.CLIENTID }}
+          tenant-id: ${{ vars.TENANTID }}
+          allow-no-subscriptions: true
+
+      - name: Set AKS Context
+        uses: azure/aks-set-context@v4
+        with:
+          cluster-name: aksostbyengineeering001
+          resource-group: rg-tf-aks
+
+      - name: Install kubelogin
+        run: |
+          echo "Downloading kubelogin..."
+          curl -L -o kubelogin.zip https://github.com/Azure/kubelogin/releases/download/v0.2.7/kubelogin-linux-amd64.zip
+          unzip kubelogin.zip
+          chmod +x bin/linux_amd64/kubelogin
+          sudo mv bin/linux_amd64/kubelogin /usr/local/bin/kubelogin
+          kubelogin --version
+
+      - name: Convert kubeconfig for noninteractive login
+        run: |
+          echo "Converting kubeconfig to noninteractive azurecli mode..."
+          kubelogin convert-kubeconfig --login azurecli
+
+      - name: Check Ingress Controller Status
+        run: |
+          echo "Checking if ingress-nginx controller is ready..."
+          kubectl get deploy -n ingress-nginx ingress-nginx-controller || echo "Ingress controller not found"
+          
+          # If controller exists, check if it's ready
+          if kubectl get deploy -n ingress-nginx ingress-nginx-controller &>/dev/null; then
+            echo "Controller exists, checking readiness..."
+            kubectl get deploy -n ingress-nginx ingress-nginx-controller -o wide
+          fi
+
+      - name: Check Cert-Manager Status
+        run: |
+          echo "Checking if cert-manager is ready..."
+          kubectl get deploy -n cert-manager cert-manager || echo "Cert-manager not found"
+          kubectl get deploy -n cert-manager cert-manager-webhook || echo "Cert-manager webhook not found"
+          kubectl get clusterissuer letsencrypt-prod || echo "ClusterIssuer not found"
+          
+          # If they exist, check if they're ready
+          if kubectl get deploy -n cert-manager cert-manager &>/dev/null; then
+            echo "Cert-manager exists, checking readiness..."
+            kubectl get deploy -n cert-manager -o wide
+          fi
+          
+          if kubectl get clusterissuer letsencrypt-prod &>/dev/null; then
+            echo "ClusterIssuer exists, checking status..."
+            kubectl describe clusterissuer letsencrypt-prod
+          fi
+
+      - name: Create Test ArgoCD Ingress
+        run: |
+          echo "Creating test ingress for ArgoCD..."
+          cat <<EOF | kubectl apply -f -
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: argocd-server-ingress-test
+            namespace: argocd
+            annotations:
+              cert-manager.io/cluster-issuer: "letsencrypt-prod"
+              nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+              nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+          spec:
+            ingressClassName: nginx
+            tls:
+            - hosts:
+              - argo.middagsklubben.beer
+              secretName: argocd-server-tls-test
+            rules:
+            - host: argo.middagsklubben.beer
+              http:
+                paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: argocd-server
+                      port:
+                        number: 443
+          EOF
+
+      - name: Wait for Certificate
+        run: |
+          echo "Waiting for certificate to be issued..."
+          kubectl get certificate -n argocd argocd-server-tls-test || echo "Certificate not found yet"
+          
+          # Wait for up to 2 minutes for the certificate
+          for i in {1..12}; do
+            if kubectl get certificate -n argocd argocd-server-tls-test &>/dev/null; then
+              echo "Certificate found, checking status..."
+              kubectl describe certificate -n argocd argocd-server-tls-test
+              break
+            fi
+            echo "Waiting for certificate to be created... ($i/12)"
+            sleep 10
+          done
+          
+          # If certificate exists now, check its status
+          if kubectl get certificate -n argocd argocd-server-tls-test &>/dev/null; then
+            kubectl get certificate -n argocd argocd-server-tls-test -o wide
+          else
+            echo "Certificate not created within timeout period"
+          fi
+
+      - name: Clean Up Test Resources
+        if: always()
+        run: |
+          echo "Cleaning up test resources..."
+          kubectl delete ingress -n argocd argocd-server-ingress-test || true
+          # Note: The certificate will be automatically cleaned up by cert-manager
