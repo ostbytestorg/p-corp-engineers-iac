@@ -158,7 +158,7 @@ jobs:
               source:
                 repoURL: https://github.com/ostbytestorg/p-corp-engineers-iac.git
                 targetRevision: HEAD
-                path: infrastructure
+                path: ARGOCD/infrastructure
               destination:
                 server: https://kubernetes.default.svc
                 namespace: argocd
