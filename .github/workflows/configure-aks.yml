@@ -200,3 +200,25 @@ jobs:
               - /webhooks/0/rules
               - /webhooks/0/tolerations
           EOF
+      - name: Create ArgoCD Issuers App
+        run: |
+              cat <<EOF | kubectl apply -f -
+              apiVersion: argoproj.io/v1alpha1
+              kind: Application
+              metadata:
+                name: cert-issuers
+                namespace: argocd
+              spec:
+                project: default
+                source:
+                  repoURL: https://github.com/ostbytestorg/p-corp-engineers-iac.git
+                  targetRevision: FEAT/HTTPS-1
+                  path: ARGOCD/infrastructure/issuers
+                destination:
+                  server: https://kubernetes.default.svc
+                  namespace: cert-manager
+                syncPolicy:
+                  automated:
+                    prune: true
+                    selfHeal: true
+              EOF
