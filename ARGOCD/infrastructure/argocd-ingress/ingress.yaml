@@ -14,7 +14,7 @@ spec:
     - argocd.middagsklubben.beer # Replace with your actual domain
     secretName: argocd-server-tls
   rules:
-  - host: argocd.example.com  # Replace with your actual domain
+  - host: argocd.middagsklubben.beer  # Replace with your actual domain
     http:
       paths:
       - path: /
