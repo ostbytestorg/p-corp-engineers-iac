@@ -57,12 +57,12 @@ jobs:
         run: |
           echo "Waiting for ArgoCD pods to be ready..."
           kubectl -n argocd rollout status deploy/argocd-server --timeout=300s    
-          - name: Configure ArgoCD repository access with GitHub App
-          env:
-            GITHUB_APP_ID: ${{ secrets.OSTBYTESTORGARGOCDAPPID }}
-            GITHUB_APP_INSTALLATION_ID: ${{ secrets.OSTBYTESTORGARGOCDINSTALLATIONID }}
-            GITHUB_APP_PRIVATE_KEY: ${{ secrets.OSTBYTESTORGARGOCDKEY }}
-          run: |
+      - name: Configure ArgoCD repository access with GitHub App
+        env:
+          GITHUB_APP_ID: ${{ secrets.OSTBYTESTORGARGOCDAPPID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ secrets.OSTBYTESTORGARGOCDINSTALLATIONID }}
+          GITHUB_APP_PRIVATE_KEY: ${{ secrets.OSTBYTESTORGARGOCDKEY }}
+        run: |
             echo "Configuring ArgoCD repository access with GitHub App..."
             
             # First verify argocd-cm exists
