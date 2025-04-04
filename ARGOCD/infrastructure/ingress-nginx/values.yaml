@@ -1,0 +1,9 @@
+ingress-nginx:
+  controller:
+    service:
+      type: LoadBalancer  # Or NodePort if that's what you prefer
+      annotations:
+        service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path: "/healthz"
+    ingressClassResource:
+      name: nginx
+      default: true

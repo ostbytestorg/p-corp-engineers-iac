@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ostbytestorg/p-corp-engineers-iac.git
+    targetRevision: FEAT/HTTPS-1
+    path: ARGOCD/infrastructure/cert-manager
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+  ignoreDifferences:
+  - group: admissionregistration.k8s.io
+    kind: ValidatingWebhookConfiguration
+    name: cert-manager-webhook
+    jsonPointers:
+    - /webhooks/0/rules
+    - /webhooks/0/tolerations
