@@ -11,10 +11,7 @@ on:
         description: "Argo Admin Group name (this group will be granted admin access in ArgoCD)"
         required: true
         default: "grp-aks-admin"
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches:
-      - '**'  # This will trigger on PRs from any branch
+
 jobs:
   configure-kube:
     runs-on:
@@ -52,7 +49,7 @@ jobs:
           kubelogin convert-kubeconfig --login azurecli
           
       - name: Make scripts executable
-        run: chmod +x ./ARGOCD/infra-apps/apply-infra-apps.sh
+        run: chmod +x /ARGOCD/infra-appmanifests/apply-infra-apps.sh
           
       - name: Apply infrastructure application manifests
-        run: ./ARGOCD/infra-apps/apply-infra-apps.sh
+        run: /ARGOCD/infra-appmanifests/apply-infra-apps.sh
