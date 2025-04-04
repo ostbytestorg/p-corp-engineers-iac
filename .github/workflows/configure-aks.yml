@@ -53,3 +53,50 @@ jobs:
           
       - name: Apply infrastructure application manifests
         run: ./ARGOCD/infra-appmanifests/apply-infra-apps.sh
+      
+      - name: Get Ingress Controller IP
+        run: |
+          echo "Getting Ingress Controller IP..."
+          INGRESS_IP=$(kubectl get service -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          echo "Ingress Controller IP: $INGRESS_IP"
+          echo "INGRESS_IP=$INGRESS_IP" >> $GITHUB_ENV
+      
+      - name: Update or Create DNS A Record for ArgoCD
+        run: |
+          # Check if the A record exists
+          echo "Checking for existing DNS record..."
+          DNS_ZONE="middagsklubben.beer"
+          DNS_RECORD_NAME="argocd"
+          RESOURCE_GROUP="rg-tf-dns"
+          TTL=60  # 1 minute TTL
+      
+          record_exists=$(az network dns record-set a list \
+            --resource-group $RESOURCE_GROUP \
+            --zone-name $DNS_ZONE \
+            --query "[?name=='$DNS_RECORD_NAME']" \
+            --output tsv)
+      
+          if [ -z "$record_exists" ]; then
+            echo "Creating new DNS A record with TTL of $TTL seconds..."
+            az network dns record-set a create \
+              --resource-group $RESOURCE_GROUP \
+              --zone-name $DNS_ZONE \
+              --name $DNS_RECORD_NAME \
+              --ttl $TTL
+            
+            az network dns record-set a add-record \
+              --resource-group $RESOURCE_GROUP \
+              --zone-name $DNS_ZONE \
+              --record-set-name $DNS_RECORD_NAME \
+              --ipv4-address ${{ env.INGRESS_IP }}
+          else
+            echo "Updating existing DNS A record with TTL of $TTL seconds..."
+            az network dns record-set a update \
+              --resource-group $RESOURCE_GROUP \
+              --zone-name $DNS_ZONE \
+              --name $DNS_RECORD_NAME \
+              --set "aRecords[0].ipv4Address=${{ env.INGRESS_IP }}" \
+              --ttl $TTL
+          fi
+      
+          echo "DNS record for argocd.middagsklubben.beer now points to ${{ env.INGRESS_IP }} with TTL of $TTL seconds"
