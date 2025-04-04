@@ -61,5 +61,5 @@ jobs:
           ARGO_CLIENT_ID: ${{ secrets.ARGO_CLIENT_ID }}
           ARGO_CLIENT_SECRET: ${{ secrets.ARGO_CLIENT_SECRET }}
           ARGOCD_SERVER_URL: "https://argocd.middagsklubben.beer"
-          ARGO_ADMIN_GROUP_ID: ${{ github.event.inputs.argo_admin_group_id }}
+          ARGO_ADMIN_GROUP_ID: ${{ github.event.inputs.argo_admin_group_id || 'grp-aks-admin' }}
         run: ARGOCD/infra-appmanifests/apply-infra-apps.sh
