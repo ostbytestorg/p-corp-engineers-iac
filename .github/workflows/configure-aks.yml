@@ -47,7 +47,74 @@ jobs:
         run: |
           echo "Converting kubeconfig to noninteractive azurecli mode..."
           kubelogin convert-kubeconfig --login azurecli
-          
+
+      - name: Install ArgoCD
+        run: |
+          kubectl create namespace argocd || true
+          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+      - name: Wait for ArgoCD Server to be Ready
+        run: |
+          echo "Waiting for ArgoCD pods to be ready..."
+          kubectl -n argocd rollout status deploy/argocd-server --timeout=300s    
+      
+          - name: Configure ArgoCD repository access with GitHub App
+          env:
+            GITHUB_APP_ID: ${{ secrets.OSTBYTESTORGARGOCDAPPID }}
+            GITHUB_APP_INSTALLATION_ID: ${{ secrets.OSTBYTESTORGARGOCDINSTALLATIONID }}
+            GITHUB_APP_PRIVATE_KEY: ${{ secrets.OSTBYTESTORGARGOCDKEY }}
+          run: |
+            echo "Configuring ArgoCD repository access with GitHub App..."
+            
+            # Create a secret containing GitHub App credentials
+            cat <<EOF > github-app-secret.yaml
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: github-app-creds
+              namespace: argocd
+            type: Opaque
+            stringData:
+              githubAppID: "${GITHUB_APP_ID}"
+              githubAppInstallationID: "${GITHUB_APP_INSTALLATION_ID}"
+              githubAppPrivateKey: |
+            $(echo "$GITHUB_APP_PRIVATE_KEY" | sed 's/^/    /')
+            EOF
+            
+            kubectl apply -f github-app-secret.yaml
+            
+            # Configure the repository in ArgoCD ConfigMap
+            cat <<EOF > repo-cm-patch.yaml
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: argocd-cm
+              namespace: argocd
+            data:
+              repositories: |
+                - url: https://github.com/ostbytestorg/p-corp-engineers-iac.git
+                  type: git
+                  githubAppID:
+                    name: github-app-creds
+                    key: githubAppID
+                  githubAppInstallationID:
+                    name: github-app-creds
+                    key: githubAppInstallationID
+                  githubAppPrivateKey:
+                    name: github-app-creds
+                    key: githubAppPrivateKey
+            EOF
+            
+            kubectl apply -f repo-cm-patch.yaml
+            
+            # Restart the repo server to apply changes
+            kubectl rollout restart deployment argocd-repo-server -n argocd
+            
+            # Wait for repo server to be ready
+            kubectl rollout status deployment argocd-repo-server -n argocd --timeout=120s
+            
+            echo "ArgoCD repository access configured successfully"    
+            
       - name: Make scripts executable
         run: chmod +x ./ARGOCD/infra-appmanifests/apply-infra-apps.sh
           
