@@ -1,0 +1,55 @@
+name: Configure AKS Cluster II
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      argo_admin_group_id:
+        description: "Argo Admin Group name (this group will be granted admin access in ArgoCD)"
+        required: true
+        default: "grp-aks-admin"
+
+jobs:
+  configure-kube:
+    runs-on:
+      group: vnet-spoke-production-engineers
+    environment: Production-plan
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Azure Login (Federated credentials)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.CLIENTID }}
+          tenant-id: ${{ vars.TENANTID }}
+          allow-no-subscriptions: true
+
+      - name: Set AKS Context
+        uses: azure/aks-set-context@v4
+        with:
+          cluster-name: aksostbyengineeering001
+          resource-group: rg-tf-aks
+
+      - name: Install kubelogin
+        run: |
+          echo "Downloading kubelogin..."
+          curl -L -o kubelogin.zip https://github.com/Azure/kubelogin/releases/download/v0.2.7/kubelogin-linux-amd64.zip
+          unzip kubelogin.zip
+          chmod +x bin/linux_amd64/kubelogin
+          sudo mv bin/linux_amd64/kubelogin /usr/local/bin/kubelogin
+          kubelogin --version
+
+      - name: Convert kubeconfig for noninteractive login using azurecli mode
+        run: |
+          echo "Converting kubeconfig to noninteractive azurecli mode..."
+          kubelogin convert-kubeconfig --login azurecli
+          
+      - name: Make scripts executable
+        run: chmod +x ./ARGOCD/infra-apps/apply-infra-apps.sh
+          
+      - name: Apply infrastructure application manifests
+        run: ./ARGOCD/infra-apps/apply-infra-apps.sh
