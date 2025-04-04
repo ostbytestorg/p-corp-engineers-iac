@@ -11,6 +11,10 @@ on:
         description: "Argo Admin Group name (this group will be granted admin access in ArgoCD)"
         required: true
         default: "grp-aks-admin"
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - '**'  # This will trigger on PRs from any branch
 
 jobs:
   configure-kube:
