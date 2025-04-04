@@ -56,4 +56,10 @@ jobs:
         run: chmod +x ARGOCD/infra-appmanifests/apply-infra-apps.sh
           
       - name: Apply infrastructure application manifests
+        env:
+          ARGO_TENANT_ID: ${{ secrets.ARGO_TENANT_ID }}
+          ARGO_CLIENT_ID: ${{ secrets.ARGO_CLIENT_ID }}
+          ARGO_CLIENT_SECRET: ${{ secrets.ARGO_CLIENT_SECRET }}
+          ARGOCD_SERVER_URL: "https://argocd.middagsklubben.beer"
+          ARGO_ADMIN_GROUP_ID: ${{ github.event.inputs.argo_admin_group_id }}
         run: ARGOCD/infra-appmanifests/apply-infra-apps.sh

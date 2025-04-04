@@ -32,5 +32,54 @@ for yaml_file in "$APPS_DIR"/*.y*ml; do
   echo "Application $APP_NAME manifest applied successfully"
 done
 
+# Configure SSO if env variables are set
+if [ ! -z "$ARGOCD_SERVER_URL" ] && [ ! -z "$ARGO_CLIENT_ID" ] && [ ! -z "$ARGO_CLIENT_SECRET" ] && [ ! -z "$ARGO_TENANT_ID" ]; then
+  echo "----------------------------------------"
+  echo "Configuring ArgoCD SSO..."
+  
+  # Create patch for argocd-cm
+  cat <<EOF > /tmp/argocd-cm-patch.json
+{
+  "data": {
+    "url": "${ARGOCD_SERVER_URL}",
+    "dex.config": "connectors:\n- type: microsoft\n  id: microsoft\n  name: Your Company GmbH\n  config:\n    clientID: \"${ARGO_CLIENT_ID}\"\n    clientSecret: \"${ARGO_CLIENT_SECRET}\"\n    redirectURI: \"${ARGOCD_SERVER_URL}/api/dex/callback\"\n    tenant: \"${ARGO_TENANT_ID}\"\n"
+  }
+}
+EOF
+
+  # Apply the patch
+  kubectl patch configmap argocd-cm -n argocd --patch-file /tmp/argocd-cm-patch.json
+  rm -f /tmp/argocd-cm-patch.json
+  
+  echo "ArgoCD SSO configuration applied successfully"
+else
+  echo "Skipping ArgoCD SSO configuration - required environment variables not set"
+fi
+
+# Configure RBAC if admin group is set
+if [ ! -z "$ARGO_ADMIN_GROUP_ID" ]; then
+  echo "----------------------------------------"
+  echo "Configuring ArgoCD RBAC..."
+  
+  # Create patch for argocd-rbac-cm
+  cat <<EOF > /tmp/argocd-rbac-cm-patch.json
+{
+  "data": {
+    "policy.csv": "g, ${ARGO_ADMIN_GROUP_ID}, role:admin",
+    "policy.default": "role:readonly",
+    "scopes": "[groups, email]"
+  }
+}
+EOF
+
+  # Apply the patch
+  kubectl patch configmap argocd-rbac-cm -n argocd --patch-file /tmp/argocd-rbac-cm-patch.json
+  rm -f /tmp/argocd-rbac-cm-patch.json
+  
+  echo "ArgoCD RBAC configuration applied successfully"
+else
+  echo "Skipping ArgoCD RBAC configuration - admin group ID not provided"
+fi
+
 echo "----------------------------------------"
-echo "All infrastructure application manifests applied successfully"
+echo "All infrastructure application manifests and configurations applied successfully"
