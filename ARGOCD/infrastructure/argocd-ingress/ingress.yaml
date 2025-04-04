@@ -11,7 +11,7 @@ metadata:
 spec:
   tls:
   - hosts:
-    - argocd.example.com  # Replace with your actual domain
+    - argocd.middagsklubben.beer # Replace with your actual domain
     secretName: argocd-server-tls
   rules:
   - host: argocd.example.com  # Replace with your actual domain
