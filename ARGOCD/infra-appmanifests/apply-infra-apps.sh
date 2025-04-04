@@ -32,6 +32,64 @@ for yaml_file in "$APPS_DIR"/*.y*ml; do
   echo "Application $APP_NAME manifest applied successfully"
 done
 
+# Update DNS if ARGOCD_SERVER_URL is set
+if [ ! -z "$ARGOCD_SERVER_URL" ]; then
+  echo "----------------------------------------"
+  echo "Updating DNS for ArgoCD..."
+  
+  # Extract hostname from ARGOCD_SERVER_URL
+  HOSTNAME=$(echo "$ARGOCD_SERVER_URL" | sed -e 's|^https://||' -e 's|^http://||' -e 's|/.*$||')
+  DNS_RECORD_NAME=$(echo "$HOSTNAME" | cut -d'.' -f1)
+  DNS_ZONE="middagsklubben.beer"
+  RESOURCE_GROUP="rg-tf-dns"
+  
+  echo "Hostname: $HOSTNAME"
+  echo "DNS Record Name: $DNS_RECORD_NAME"
+  
+  # Wait for and get the ingress IP address
+  echo "Waiting for nginx ingress controller to have an external IP..."
+  external_ip=""
+  while [ -z "$external_ip" ]; do
+    echo "Checking for external IP..."
+    external_ip=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+    
+    if [ -z "$external_ip" ]; then
+      echo "IP not found yet, waiting 10 seconds..."
+      sleep 10
+    fi
+  done
+  
+  echo "Ingress Controller IP: $external_ip"
+  
+  # Check if the A record exists
+  echo "Checking for existing DNS record..."
+  record_exists=$(az network dns record-set a list \
+    --resource-group $RESOURCE_GROUP \
+    --zone-name $DNS_ZONE \
+    --query "[?name=='$DNS_RECORD_NAME']" \
+    --output tsv)
+    
+  if [ -z "$record_exists" ]; then
+    echo "Creating new DNS A record for $DNS_RECORD_NAME.$DNS_ZONE..."
+    az network dns record-set a add-record \
+      --resource-group $RESOURCE_GROUP \
+      --zone-name $DNS_ZONE \
+      --record-set-name $DNS_RECORD_NAME \
+      --ipv4-address "$external_ip"
+  else
+    echo "Updating existing DNS A record for $DNS_RECORD_NAME.$DNS_ZONE..."
+    az network dns record-set a update \
+      --resource-group $RESOURCE_GROUP \
+      --zone-name $DNS_ZONE \
+      --name $DNS_RECORD_NAME \
+      --set "aRecords[0].ipv4Address=$external_ip"
+  fi
+  
+  echo "DNS record for $HOSTNAME now points to $external_ip"
+else
+  echo "Skipping DNS update - ARGOCD_SERVER_URL not set"
+fi
+
 # Configure SSO if env variables are set
 if [ ! -z "$ARGOCD_SERVER_URL" ] && [ ! -z "$ARGO_CLIENT_ID" ] && [ ! -z "$ARGO_CLIENT_SECRET" ] && [ ! -z "$ARGO_TENANT_ID" ]; then
   echo "----------------------------------------"
