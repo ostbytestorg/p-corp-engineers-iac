@@ -142,6 +142,5 @@ jobs:
           # Wait for deployments to be available
           kubectl rollout status deployment argocd-server -n argocd --timeout=120s
           kubectl rollout status deployment argocd-repo-server -n argocd --timeout=120s
-          kubectl rollout status deployment argocd-application-controller -n argocd --timeout=120s
           
           echo "ArgoCD components restarted successfully"
