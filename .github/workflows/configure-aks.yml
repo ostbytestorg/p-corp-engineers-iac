@@ -27,7 +27,11 @@ jobs:
           client-id: ${{ vars.CLIENTID }}
           tenant-id: ${{ vars.TENANTID }}
           allow-no-subscriptions: true
-
+      - name: Install ArgoCD CLI
+        run: |
+            curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+            chmod +x argocd
+            sudo mv argocd /usr/local/bin/
       - name: Set AKS Context
         uses: azure/aks-set-context@v4
         with:
@@ -56,4 +60,88 @@ jobs:
       - name: Wait for ArgoCD Server to be Ready
         run: |
           echo "Waiting for ArgoCD pods to be ready..."
-          kubectl -n argocd rollout status deploy/argocd-server --timeout=300s    
+          kubectl -n argocd rollout status deploy/argocd-server --timeout=300s  
+
+      - name: Set up port-forward to ArgoCD
+        run: |
+            # Start port forwarding in the background
+            kubectl port-forward svc/argocd-server -n argocd 8080:443 &
+            # Store the process ID so we can kill it later
+            echo "PORT_FORWARD_PID=$!" >> $GITHUB_ENV
+            # Wait for port forwarding to establish
+            sleep 10
+
+      - name: Configure ArgoCD Repository
+        env:
+          GITHUB_APP_ID: ${{ secrets.OSTBYTESTORGARGOCDAPPID }}
+          GITHUB_INSTALLATION_ID: ${{ secrets.OSTBYTESTORGARGOCDINSTALLATIONID }}
+          GITHUB_PRIVATE_KEY: ${{ secrets.OSTBYTESTORGARGOCDKEY }}
+        run: |
+            # Get admin password
+            ADMIN_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+            
+            # Login to ArgoCD
+            argocd login localhost:8080 --username admin --password "$ADMIN_PASSWORD" --insecure
+            
+            # Save GitHub App private key to a temporary file
+            echo "$GITHUB_PRIVATE_KEY" > /tmp/github-private-key.pem
+            
+            # Add repository to ArgoCD
+            argocd repo add https://github.com/ostbytestorg/p-corp-engineers-iac.git \
+              --name p-engineers-apps \
+              --type git \
+              --github-app-id $GITHUB_APP_ID \
+              --github-app-installation-id $GITHUB_INSTALLATION_ID \
+              --github-app-private-key-path /tmp/github-private-key.pem
+            
+            # Verify repository connection
+            argocd repo list
+  
+      - name: Cleanup
+        if: always()
+        run: |
+            # Kill the port-forward process
+            if [ -n "$PORT_FORWARD_PID" ]; then
+              kill $PORT_FORWARD_PID || true
+            fi
+            
+            # Remove any temporary files
+            rm -f /tmp/github-private-key.pem
+
+      - name: Install kubelogin
+        run: |
+              echo "Downloading kubelogin..."
+              curl -L -o kubelogin.zip https://github.com/Azure/kubelogin/releases/download/v0.2.7/kubelogin-linux-amd64.zip
+              unzip kubelogin.zip
+              chmod +x bin/linux_amd64/kubelogin
+              sudo mv bin/linux_amd64/kubelogin /usr/local/bin/kubelogin
+              kubelogin --version
+    
+      - name: Convert kubeconfig for noninteractive login using azurecli mode
+        run: |
+            echo "Converting kubeconfig to noninteractive azurecli mode..."
+            kubelogin convert-kubeconfig --login azurecli
+              
+      - name: Make scripts executable
+        run: chmod +x ARGOCD/infra-appmanifests/apply-infra-apps.sh
+              
+      - name: Apply infrastructure application manifests
+        env:
+          ARGO_TENANT_ID: ${{ secrets.ARGO_TENANT_ID }}
+          ARGO_CLIENT_ID: ${{ secrets.ARGO_CLIENT_ID }}
+          ARGO_CLIENT_SECRET: ${{ secrets.ARGO_CLIENT_SECRET }}
+          ARGOCD_SERVER_URL: "https://argocd.middagsklubben.beer"
+          ARGO_ADMIN_GROUP_ID: ${{ github.event.inputs.argo_admin_group_id || 'grp-aks-admin' }}
+        run: ARGOCD/infra-appmanifests/apply-infra-apps.sh
+
+      - name: Ensure ArgoCD is properly restarted
+        run: |
+          echo "Restarting ArgoCD components..."
+          kubectl rollout restart deployment -n argocd
+          
+          # Wait for deployments to be available
+          kubectl rollout status deployment argocd-server -n argocd --timeout=120s
+          kubectl rollout status deployment argocd-repo-server -n argocd --timeout=120s
+          kubectl rollout status deployment argocd-application-controller -n argocd --timeout=120s
+          
+          echo "ArgoCD components restarted successfully"

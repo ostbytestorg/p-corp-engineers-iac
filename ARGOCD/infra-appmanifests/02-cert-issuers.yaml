@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/ostbytestorg/p-corp-engineers-iac.git
-    targetRevision: FEAT/HTTPS-1
+    targetRevision: main
     path: ARGOCD/infrastructure/issuers
   destination:
     server: https://kubernetes.default.svc
