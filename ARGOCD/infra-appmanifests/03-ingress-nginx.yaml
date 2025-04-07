@@ -8,6 +8,7 @@ spec:
   source:
     repoURL: https://github.com/ostbytestorg/p-corp-engineers-iac.git
     targetRevision: main
+    path: ARGOCD/infrastructure/ingress-nginx
   destination:
     server: https://kubernetes.default.svc
     namespace: ingress-nginx
