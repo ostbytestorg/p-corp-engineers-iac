@@ -12,6 +12,7 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager
+    path: ARGOCD/infrastructure/ingress-nginx
   syncPolicy:
     automated:
       prune: true
