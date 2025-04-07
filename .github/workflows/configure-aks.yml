@@ -27,7 +27,11 @@ jobs:
           client-id: ${{ vars.CLIENTID }}
           tenant-id: ${{ vars.TENANTID }}
           allow-no-subscriptions: true
-
+      - name: Install ArgoCD CLI
+        run: |
+            curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+            chmod +x argocd
+            sudo mv argocd /usr/local/bin/
       - name: Set AKS Context
         uses: azure/aks-set-context@v4
         with:
@@ -57,3 +61,40 @@ jobs:
         run: |
           echo "Waiting for ArgoCD pods to be ready..."
           kubectl -n argocd rollout status deploy/argocd-server --timeout=300s    
+
+      - name: Configure ArgoCD Repository
+        env:
+          GITHUB_APP_ID: ${{ secrets.GITHUB_APP_ID }}
+          GITHUB_INSTALLATION_ID: ${{ secrets.GITHUB_INSTALLATION_ID }}
+          GITHUB_PRIVATE_KEY: ${{ secrets.GITHUB_PRIVATE_KEY }}
+        run: |
+            # Get admin password
+            ADMIN_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+            
+            # Login to ArgoCD
+            argocd login localhost:8080 --username admin --password "$ADMIN_PASSWORD" --insecure
+            
+            # Save GitHub App private key to a temporary file
+            echo "$GITHUB_PRIVATE_KEY" > /tmp/github-private-key.pem
+            
+            # Add repository to ArgoCD
+            argocd repo add https://github.com/your-org/your-repo \
+              --name p-engineers-apps \
+              --type git \
+              --github-app-id $GITHUB_APP_ID \
+              --github-app-installation-id $GITHUB_INSTALLATION_ID \
+              --github-app-private-key-path /tmp/github-private-key.pem
+            
+            # Verify repository connection
+            argocd repo list
+  
+      - name: Cleanup
+        if: always()
+        run: |
+            # Kill the port-forward process
+            if [ -n "$PORT_FORWARD_PID" ]; then
+              kill $PORT_FORWARD_PID || true
+            fi
+            
+            # Remove any temporary files
+            rm -f /tmp/github-private-key.pem
