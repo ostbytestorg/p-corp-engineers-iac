@@ -133,3 +133,15 @@ jobs:
           ARGOCD_SERVER_URL: "https://argocd.middagsklubben.beer"
           ARGO_ADMIN_GROUP_ID: ${{ github.event.inputs.argo_admin_group_id || 'grp-aks-admin' }}
         run: ARGOCD/infra-appmanifests/apply-infra-apps.sh
+
+      - name: Ensure ArgoCD is properly restarted
+        run: |
+          echo "Restarting ArgoCD components..."
+          kubectl rollout restart deployment -n argocd
+          
+          # Wait for deployments to be available
+          kubectl rollout status deployment argocd-server -n argocd --timeout=120s
+          kubectl rollout status deployment argocd-repo-server -n argocd --timeout=120s
+          kubectl rollout status deployment argocd-application-controller -n argocd --timeout=120s
+          
+          echo "ArgoCD components restarted successfully"
