@@ -108,8 +108,8 @@ jobs:
             # Remove any temporary files
             rm -f /tmp/github-private-key.pem
 
-            - name: Install kubelogin
-            run: |
+      - name: Install kubelogin
+        run: |
               echo "Downloading kubelogin..."
               curl -L -o kubelogin.zip https://github.com/Azure/kubelogin/releases/download/v0.2.7/kubelogin-linux-amd64.zip
               unzip kubelogin.zip
