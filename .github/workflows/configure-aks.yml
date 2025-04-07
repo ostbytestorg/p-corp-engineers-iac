@@ -61,8 +61,8 @@ jobs:
         run: |
           echo "Waiting for ArgoCD pods to be ready..."
           kubectl -n argocd rollout status deploy/argocd-server --timeout=300s    
-          - name: Set up port-forward to ArgoCD
-          run: |
+      - name: Set up port-forward to ArgoCD
+        run: |
             # Start port forwarding in the background
             kubectl port-forward svc/argocd-server -n argocd 8080:443 &
             # Store the process ID so we can kill it later
