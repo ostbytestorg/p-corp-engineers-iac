@@ -61,6 +61,14 @@ jobs:
         run: |
           echo "Waiting for ArgoCD pods to be ready..."
           kubectl -n argocd rollout status deploy/argocd-server --timeout=300s    
+          - name: Set up port-forward to ArgoCD
+          run: |
+            # Start port forwarding in the background
+            kubectl port-forward svc/argocd-server -n argocd 8080:443 &
+            # Store the process ID so we can kill it later
+            echo "PORT_FORWARD_PID=$!" >> $GITHUB_ENV
+            # Wait for port forwarding to establish
+            sleep 10
 
       - name: Configure ArgoCD Repository
         env:
@@ -78,7 +86,7 @@ jobs:
             echo "$GITHUB_PRIVATE_KEY" > /tmp/github-private-key.pem
             
             # Add repository to ArgoCD
-            argocd repo add https://github.com/your-org/your-repo \
+            argocd repo add https://github.com/ostbytestorg/p-engineers-apps.git \
               --name p-engineers-apps \
               --type git \
               --github-app-id $GITHUB_APP_ID \
