@@ -60,7 +60,8 @@ jobs:
       - name: Wait for ArgoCD Server to be Ready
         run: |
           echo "Waiting for ArgoCD pods to be ready..."
-          kubectl -n argocd rollout status deploy/argocd-server --timeout=300s    
+          kubectl -n argocd rollout status deploy/argocd-server --timeout=300s  
+
       - name: Set up port-forward to ArgoCD
         run: |
             # Start port forwarding in the background
@@ -72,9 +73,9 @@ jobs:
 
       - name: Configure ArgoCD Repository
         env:
-          GITHUB_APP_ID: ${{ secrets.GITHUB_APP_ID }}
-          GITHUB_INSTALLATION_ID: ${{ secrets.GITHUB_INSTALLATION_ID }}
-          GITHUB_PRIVATE_KEY: ${{ secrets.GITHUB_PRIVATE_KEY }}
+          GITHUB_APP_ID: ${{ secrets.OSTBYTESTORGARGOCDAPPID }}
+          GITHUB_INSTALLATION_ID: ${{ secrets.OSTBYTESTORGARGOCDINSTALLATIONID }}
+          GITHUB_PRIVATE_KEY: ${{ secrets.OSTBYTESTORGARGOCDKEY }}
         run: |
             # Get admin password
             ADMIN_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
