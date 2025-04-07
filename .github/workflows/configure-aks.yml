@@ -87,7 +87,7 @@ jobs:
             echo "$GITHUB_PRIVATE_KEY" > /tmp/github-private-key.pem
             
             # Add repository to ArgoCD
-            argocd repo add https://github.com/ostbytestorg/p-engineers-apps.git \
+            argocd repo add https://github.com/ostbytestorg/p-corp-engineers-iac.git \
               --name p-engineers-apps \
               --type git \
               --github-app-id $GITHUB_APP_ID \
