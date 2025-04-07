@@ -107,3 +107,29 @@ jobs:
             
             # Remove any temporary files
             rm -f /tmp/github-private-key.pem
+
+            - name: Install kubelogin
+            run: |
+              echo "Downloading kubelogin..."
+              curl -L -o kubelogin.zip https://github.com/Azure/kubelogin/releases/download/v0.2.7/kubelogin-linux-amd64.zip
+              unzip kubelogin.zip
+              chmod +x bin/linux_amd64/kubelogin
+              sudo mv bin/linux_amd64/kubelogin /usr/local/bin/kubelogin
+              kubelogin --version
+    
+      - name: Convert kubeconfig for noninteractive login using azurecli mode
+        run: |
+            echo "Converting kubeconfig to noninteractive azurecli mode..."
+            kubelogin convert-kubeconfig --login azurecli
+              
+      - name: Make scripts executable
+        run: chmod +x ARGOCD/infra-appmanifests/apply-infra-apps.sh
+              
+      - name: Apply infrastructure application manifests
+        env:
+          ARGO_TENANT_ID: ${{ secrets.ARGO_TENANT_ID }}
+          ARGO_CLIENT_ID: ${{ secrets.ARGO_CLIENT_ID }}
+          ARGO_CLIENT_SECRET: ${{ secrets.ARGO_CLIENT_SECRET }}
+          ARGOCD_SERVER_URL: "https://argocd.middagsklubben.beer"
+          ARGO_ADMIN_GROUP_ID: ${{ github.event.inputs.argo_admin_group_id || 'grp-aks-admin' }}
+        run: ARGOCD/infra-appmanifests/apply-infra-apps.sh
