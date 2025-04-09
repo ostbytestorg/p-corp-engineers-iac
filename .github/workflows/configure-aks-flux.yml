@@ -6,6 +6,8 @@ permissions:
 
 on:
   workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   configure-kube:
