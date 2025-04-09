@@ -30,7 +30,7 @@ resource "azurerm_resource_group" "rg" {
 resource "azurerm_container_registry" "acr" {
   count = var.deploy ? 1 : 0
   name                = var.acr_name
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = var.resource_group_name
   location            = var.location
   sku                 = "Basic"
   admin_enabled       = true
@@ -40,8 +40,8 @@ resource "azurerm_container_registry" "acr" {
 resource "azurerm_kubernetes_cluster" "aks" {
   count = var.deploy ? 1 : 0
   name                = var.aks_cluster_name
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  location            = var.location
+  resource_group_name = var.resource_group_name
   dns_prefix          = "akspoc"
 
   default_node_pool {
@@ -56,7 +56,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
 
   azure_active_directory_role_based_access_control {
     azure_rbac_enabled = true
-    admin_group_object_ids = [ azuread_group.entra_admin_group.object_id ]
+    admin_group_object_ids = [ azuread_group.entra_admin_group.object_id[count.0] ]
     tenant_id = data.azurerm_client_config.current.tenant_id
   }
 
