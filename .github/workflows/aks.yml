@@ -18,8 +18,7 @@ on:
 
 jobs:
   azure-login:
-    runs-on:
-      group: ubuntu-latest
+    runs-on: ubuntu-latest
     environment: Production-plan
     steps:
       - name: Azure Login (Federated credentials)
