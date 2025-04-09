@@ -7,6 +7,7 @@ data "azurerm_client_config" "current" {}
 # entra group for admins
 
 resource "azuread_group" "entra_admin_group" {
+  count = var.deploy ? 1 : 0
   display_name = "grp-aks-admin"
   security_enabled = true
 }
@@ -19,6 +20,7 @@ resource "azuread_group_member" "entra_admin_member" {
 
 # resourcegroup for aks and acr
 resource "azurerm_resource_group" "rg" {
+  count = var.deploy ? 1 : 0
   name     = var.resource_group_name
   location = var.location
   tags     = var.tags
@@ -26,6 +28,7 @@ resource "azurerm_resource_group" "rg" {
 
 # Create an Azure Container Registry for your images
 resource "azurerm_container_registry" "acr" {
+  count = var.deploy ? 1 : 0
   name                = var.acr_name
   resource_group_name = azurerm_resource_group.rg.name
   location            = var.location
@@ -35,6 +38,7 @@ resource "azurerm_container_registry" "acr" {
 
 # Create an AKS Cluster
 resource "azurerm_kubernetes_cluster" "aks" {
+  count = var.deploy ? 1 : 0
   name                = var.aks_cluster_name
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
