@@ -3,4 +3,4 @@ kind: Kustomization
 resources:
   - helm-repositories.yaml
   - bitnami-repositories.yaml
-  - netbox-repository.yaml
+  - netbox-repositories.yaml
