@@ -1,0 +1,9 @@
+# FLUX/apps/netbox/base/helmrepository.yaml
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: HelmRepository
+metadata:
+  name: bootc
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://charts.lazybit.ch
