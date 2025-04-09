@@ -23,5 +23,5 @@ variable "acr_name" {
 
 variable "deploy" {
   type    = bool
-  default = false
+  default = true
 }
