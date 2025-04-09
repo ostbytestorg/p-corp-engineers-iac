@@ -14,7 +14,7 @@ resource "azuread_group" "entra_admin_group" {
 
 # Add the currently running service principal to the above group
 resource "azuread_group_member" "entra_admin_member" {
-  group_object_id  = azuread_group.entra_admin_group.object_id
+  group_object_id  = azuread_group.entra_admin_group.object_id[0] 
   member_object_id = data.azurerm_client_config.current.object_id
 }
 
@@ -56,7 +56,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
 
   azure_active_directory_role_based_access_control {
     azure_rbac_enabled = true
-    admin_group_object_ids = [ azuread_group.entra_admin_group.object_id[count.0] ]
+    admin_group_object_ids = [ azuread_group.entra_admin_group.object_id[0] ]
     tenant_id = data.azurerm_client_config.current.tenant_id
   }
 
@@ -75,14 +75,14 @@ output "kube_config" {
 }
 
 output "acr_login_server" {
-  value = azurerm_container_registry.acr.login_server
+  value = azurerm_container_registry.acr.login_server[0]
 }
 
 output "acr_admin_username" {
-  value = azurerm_container_registry.acr.admin_username
+  value = azurerm_container_registry.acr.admin_username[0]
 }
 
 output "acr_admin_password" {
-  value     = azurerm_container_registry.acr.admin_password
+  value     = azurerm_container_registry.acr.admin_password[0]
   sensitive = true
 }
