@@ -1,5 +1,0 @@
-# FLUX/apps/netbox/base/namespace.yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: netbox
