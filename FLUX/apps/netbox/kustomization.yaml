@@ -1,7 +1,19 @@
-# FLUX/apps/netbox/kustomization.yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
+apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
-resources:
-  - base
-  - postgres
-  - redis
+metadata:
+  name: netbox
+  namespace: flux-system
+spec:
+  path: ./FLUX/apps/netbox
+  prune: true
+  interval: 10m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  components:
+    - ./databases/postgres
+    - ./databases/redis
+  resources:
+    - helmrelease.yaml
+    - config/netbox-config.yaml
+    - config/netbox-secret.sops.yaml

@@ -1,0 +1,12 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: netbox-redis
+  namespace: flux-system
+spec:
+  path: ./FLUX/apps/netbox/databases/redis
+  prune: true
+  interval: 10m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

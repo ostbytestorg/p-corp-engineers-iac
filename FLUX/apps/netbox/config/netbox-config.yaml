@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: netbox-config
+  namespace: netbox
+data:
+  values.yaml: |
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - host: netbox.example.com
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - secretName: netbox-tls
+          hosts:
+            - netbox.example.com
+    persistence:
+      enabled: true
+      storageClass: default
+    postgresql:
+      enabled: false
+      external:
+        host: netbox-postgres
+        username: netbox
+        database: netbox
+    redis:
+      enabled: false
+      tasks:
+        host: netbox-redis-master
+        password: "CHANGE_ME"
+      caching:
+        host: netbox-redis-master
+        password: "CHANGE_ME"
