@@ -20,3 +20,8 @@ variable "aks_cluster_name" {
 variable "acr_name" {
   type    = string
 }
+
+variable "deploy" {
+  type    = bool
+  default = true
+}
