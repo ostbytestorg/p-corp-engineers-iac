@@ -56,31 +56,38 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.FLUX_SSH_PRIVATE_KEY }}
         run: |
           # Set up the SSH key for Flux
-          mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/flux-deploy-key
-          chmod 600 ~/.ssh/flux-deploy-key
+          KEY_PATH="${HOME}/.ssh/flux-deploy-key"
+          mkdir -p "${HOME}/.ssh"
+          echo "$SSH_PRIVATE_KEY" > "${KEY_PATH}"
+          chmod 600 "${KEY_PATH}"
+          
+          # Debug: verify the key exists and show path
+          ls -la "${KEY_PATH}"
+          echo "Key stored at: ${KEY_PATH}"
           
           # Configure SSH to use this key for github.com
-          cat > ~/.ssh/config << EOF
+          cat > "${HOME}/.ssh/config" << EOF
           Host github.com
-            IdentityFile ~/.ssh/flux-deploy-key
+            IdentityFile ${KEY_PATH}
             StrictHostKeyChecking no
           EOF
           
-          chmod 600 ~/.ssh/config
+          chmod 600 "${HOME}/.ssh/config"
           
           # Add github.com to known hosts to avoid prompts
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          ssh-keyscan github.com >> "${HOME}/.ssh/known_hosts"
+          
+          # Export the path for use in later steps
+          echo "KEY_PATH=${KEY_PATH}" >> $GITHUB_ENV
 
       - name: Bootstrap Flux
         run: |
           # Bootstrap Flux using the configured SSH setup
-            flux bootstrap git \
-              --url=ssh://git@github.com/ostbytestorg/p-corp-engineers-iac.git \
-              --branch=FEAT/FLUX-1 \
-              --private-key-file=~/.ssh/flux-deploy-key \
-              --password="" \
-              --path=FLUX
+          flux bootstrap git \
+            --url=ssh://git@github.com/ostbytestorg/p-corp-engineers-iac.git \
+            --branch=FEAT/FLUX-1 \
+            --private-key-file="${KEY_PATH}" \
+            --path=FLUX
           
           echo "Flux bootstrap completed successfully!"
           
