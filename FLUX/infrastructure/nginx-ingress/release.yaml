@@ -1,0 +1,25 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: ingress-nginx
+  namespace: flux-system
+spec:
+  releaseName: ingress-nginx
+  targetNamespace: ingress-nginx
+  interval: 1h
+  chart:
+    spec:
+      chart: ingress-nginx
+      version: "4.7.1"
+      sourceRef:
+        kind: HelmRepository
+        name: ingress-nginx
+        namespace: flux-system
+  values:
+    controller:
+      service:
+        type: LoadBalancer
+        annotations:
+          service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path: "/healthz"
+          service.beta.kubernetes.io/azure-load-balancer-health-probe-port: "10254"
+      # Add any other configuration values you need
