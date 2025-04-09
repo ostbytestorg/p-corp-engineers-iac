@@ -11,8 +11,8 @@ spec:
       chart: netbox
       version: "3.6.0"
       sourceRef:
-        kind: OCIRepository  # Changed from HelmRepository to OCIRepository
-        name: netbox         # Changed from bootc to netbox
+        kind: HelmRepository  # Changed from OCIRepository
+        name: netbox
         namespace: flux-system
   values:
     image:
