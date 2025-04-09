@@ -75,13 +75,12 @@ jobs:
       - name: Bootstrap Flux
         run: |
           # Bootstrap Flux using the configured SSH setup
-          flux bootstrap github \
-            --owner=mariusostby \
-            --repository=p-corp-engineers-iac \
-            --branch=main \
-            --path=clusters/production \
-            --private=true \
-            --personal=false
+            flux bootstrap git \
+              --url=ssh://git@github.com:ostbytestorg/p-corp-engineers-iac.git \
+              --branch=FEAT/FLUX-1 \
+              --private-key-file=~/.ssh/flux-deploy-key \
+              --password="" \
+              --path=FLUX
           
           echo "Flux bootstrap completed successfully!"
           
