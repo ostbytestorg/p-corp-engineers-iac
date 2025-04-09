@@ -6,15 +6,15 @@ data "azurerm_client_config" "current" {}
 
 # entra group for admins
 resource "azuread_group" "entra_admin_group" {
-  count               = var.deploy ? 1 : 0
-  display_name        = "grp-aks-admin"
-  security_enabled    = true
+  count            = var.deploy ? 1 : 0
+  display_name     = "grp-aks-admin"
+  security_enabled = true
 }
 
 # Add the currently running service principal to the above group
 resource "azuread_group_member" "entra_admin_member" {
   count            = var.deploy ? 1 : 0
-  group_object_id  = azuread_group.entra_admin_group[0].object_id 
+  group_object_id  = azuread_group.entra_admin_group[0].object_id
   member_object_id = data.azurerm_client_config.current.object_id
 }
 
@@ -47,7 +47,13 @@ resource "azurerm_kubernetes_cluster" "aks" {
   default_node_pool {
     name       = "default"
     node_count = 1
-    vm_size    = "Standard_B2s"  # Cost-efficient size for a POC.
+    vm_size    = "Standard_B2s" # Cost-efficient size for a POC.
+
+    upgrade_settings {
+      drain_timeout_in_minutes      = 0
+      max_surge                     = "10%"
+      node_soak_duration_in_minutes = 0
+    }
   }
 
   identity {
@@ -55,18 +61,18 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 
   azure_active_directory_role_based_access_control {
-    azure_rbac_enabled = true
-    admin_group_object_ids = [ azuread_group.entra_admin_group[0].object_id ]
-    tenant_id = data.azurerm_client_config.current.tenant_id
+    azure_rbac_enabled     = true
+    admin_group_object_ids = [azuread_group.entra_admin_group[0].object_id]
+    tenant_id              = data.azurerm_client_config.current.tenant_id
   }
 }
 
 resource "azurerm_role_assignment" "acrtoaks" {
-  count                              = var.deploy ? 1 : 0
-  principal_id                       = azurerm_kubernetes_cluster.aks[0].kubelet_identity[0].object_id
-  role_definition_name               = "AcrPush"
-  scope                              = azurerm_container_registry.acr[0].id
-  skip_service_principal_aad_check   = true
+  count                            = var.deploy ? 1 : 0
+  principal_id                     = azurerm_kubernetes_cluster.aks[0].kubelet_identity[0].object_id
+  role_definition_name             = "AcrPush"
+  scope                            = azurerm_container_registry.acr[0].id
+  skip_service_principal_aad_check = true
 }
 
 output "kube_config" {
