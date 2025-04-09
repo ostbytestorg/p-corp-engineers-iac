@@ -19,7 +19,7 @@ on:
 jobs:
   azure-login:
     runs-on:
-      group: vnet-spoke-production-engineers
+      group: ubuntu-latest
     environment: Production-plan
     steps:
       - name: Azure Login (Federated credentials)
