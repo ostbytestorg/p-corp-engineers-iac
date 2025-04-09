@@ -8,7 +8,7 @@ metadata:
 spec:
   interval: 1m0s
   ref:
-    branch: FEAT/FLUX-1
+    branch: main
   secretRef:
     name: flux-system
   url: ssh://git@github.com/ostbytestorg/p-corp-engineers-iac.git
