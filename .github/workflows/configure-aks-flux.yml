@@ -6,9 +6,6 @@ permissions:
 
 on:
   workflow_dispatch:
-  
-  pull_request:
-    types: [opened, synchronize, reopened]
 
 jobs:
   configure-kube:
@@ -69,19 +66,20 @@ jobs:
           EOF
           
           chmod 600 ~/.ssh/config
+          
+          # Add github.com to known hosts to avoid prompts
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
 
       - name: Bootstrap Flux
         run: |
-          # Bootstrap Flux using the configured SSH deploy key
+          # Bootstrap Flux using the configured SSH setup
           flux bootstrap github \
-            --owner=ostbytestorg \
+            --owner=mariusostby \
             --repository=p-corp-engineers-iac \
             --branch=main \
             --path=clusters/production \
             --private=true \
-            --personal=false \
-            --ssh-key-algorithm=ed25519 \
-            --ssh-private-key-file=~/.ssh/flux-deploy-key
+            --personal=false
           
           echo "Flux bootstrap completed successfully!"
           
