@@ -61,10 +61,6 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > "${KEY_PATH}"
           chmod 600 "${KEY_PATH}"
           
-          # Debug: verify the key exists and show path
-          ls -la "${KEY_PATH}"
-          echo "Key stored at: ${KEY_PATH}"
-          
           # Configure SSH to use this key for github.com
           cat > "${HOME}/.ssh/config" << EOF
           Host github.com
@@ -82,8 +78,8 @@ jobs:
 
       - name: Bootstrap Flux
         run: |
-          # Bootstrap Flux using the configured SSH setup
-          flux bootstrap git \
+          # Use yes to automatically answer "y" to any prompts
+          yes | flux bootstrap git \
             --url=ssh://git@github.com/ostbytestorg/p-corp-engineers-iac.git \
             --branch=FEAT/FLUX-1 \
             --private-key-file="${KEY_PATH}" \
