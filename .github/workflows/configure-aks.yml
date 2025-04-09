@@ -14,8 +14,8 @@ on:
 
 jobs:
   configure-kube:
-    runs-on:
-      group: vnet-spoke-production-engineers
+    runs-on: ubuntu-latest
+     # group: vnet-spoke-production-engineers
     environment: Production-plan
     steps:
       - name: Checkout Repository
