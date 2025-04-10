@@ -2,8 +2,6 @@ terraform {
   backend "azurerm" {}
 }
 
-data "azurerm_client_config" "current" {}
-
 # entra group for admins
 resource "azuread_group" "entra_admin_group" {
   count            = var.deploy ? 1 : 0
@@ -26,6 +24,15 @@ resource "azurerm_resource_group" "rg" {
   tags     = var.tags
 }
 
+# Create a subnet for AKS
+resource "azurerm_subnet" "aks_subnet" {
+  count                = var.deploy ? 1 : 0
+  name                 = var.subnet_name
+  resource_group_name  = var.vnet_resource_group_name
+  virtual_network_name = var.vnetname
+  address_prefixes     = [var.subnet_address_prefix]
+}
+
 # Create an Azure Container Registry for your images
 resource "azurerm_container_registry" "acr" {
   count               = var.deploy ? 1 : 0
@@ -43,11 +50,18 @@ resource "azurerm_kubernetes_cluster" "aks" {
   location            = var.location
   resource_group_name = var.resource_group_name
   dns_prefix          = "akspoc"
+  
+network_profile {
+  network_plugin    = "azure"
+  dns_service_ip    = "10.0.138.10"  # Changed from 10.0.137.10
+  service_cidr      = "10.0.138.0/24"  # Changed from 10.0.137.0/24
+}
 
   default_node_pool {
-    name       = "default"
-    node_count = 1
-    vm_size    = "Standard_B2s" # Cost-efficient size for a POC.
+    name                = "default"
+    node_count          = 1
+    vm_size             = var.nodeskusize
+    vnet_subnet_id      = azurerm_subnet.aks_subnet[0].id
 
     upgrade_settings {
       drain_timeout_in_minutes      = 0
@@ -65,6 +79,10 @@ resource "azurerm_kubernetes_cluster" "aks" {
     admin_group_object_ids = [azuread_group.entra_admin_group[0].object_id]
     tenant_id              = data.azurerm_client_config.current.tenant_id
   }
+
+  depends_on = [
+    azurerm_subnet.aks_subnet
+  ]
 }
 
 resource "azurerm_role_assignment" "acrtoaks" {
@@ -73,6 +91,14 @@ resource "azurerm_role_assignment" "acrtoaks" {
   role_definition_name             = "AcrPush"
   scope                            = azurerm_container_registry.acr[0].id
   skip_service_principal_aad_check = true
+}
+
+# Grant AKS the Network Contributor role on the subnet
+resource "azurerm_role_assignment" "aks_subnet_role" {
+  count                = var.deploy ? 1 : 0
+  principal_id         = azurerm_kubernetes_cluster.aks[0].identity[0].principal_id
+  role_definition_name = "Network Contributor"
+  scope                = azurerm_subnet.aks_subnet[0].id
 }
 
 output "kube_config" {
@@ -91,4 +117,12 @@ output "acr_admin_username" {
 output "acr_admin_password" {
   value     = var.deploy ? azurerm_container_registry.acr[0].admin_password : null
   sensitive = true
+}
+
+output "aks_cluster_id" {
+  value = var.deploy ? azurerm_kubernetes_cluster.aks[0].id : null
+}
+
+output "aks_subnet_id" {
+  value = var.deploy ? azurerm_subnet.aks_subnet[0].id : null
 }
