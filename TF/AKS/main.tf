@@ -62,6 +62,7 @@ network_profile {
     node_count          = 1
     vm_size             = var.nodeskusize
     vnet_subnet_id      = azurerm_subnet.aks_subnet[0].id
+    max_pods = 50
 
     upgrade_settings {
       drain_timeout_in_minutes      = 0
