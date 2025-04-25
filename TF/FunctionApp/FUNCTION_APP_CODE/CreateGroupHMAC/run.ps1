@@ -61,9 +61,8 @@ function Get-KeyVaultSecret {
             return $null
         }
         
-        # Get the secret from Key Vault - Ensure api-version is included
-        $apiVersion = "7.0"
-        $secretUri = "https://$KeyVaultName.vault.azure.net/secrets/$SecretName?api-version=$apiVersion"
+        # Correctly format the Key Vault secret URI
+        $secretUri = "https://$KeyVaultName.vault.azure.net/secrets/$SecretName" + "?api-version=7.0"
         Write-Host "Secret URI: $secretUri"
         
         Write-Host "Requesting secret from Key Vault..."
@@ -76,6 +75,16 @@ function Get-KeyVaultSecret {
             Write-Host "ERROR getting secret: $($_.Exception.Message)"
             if ($_.Exception.Response) {
                 Write-Host "Response Status Code: $($_.Exception.Response.StatusCode)"
+                
+                # Try to get more detailed error information
+                try {
+                    $errorContent = $_.ErrorDetails.Message
+                    Write-Host "Error Details: $errorContent"
+                }
+                catch {
+                    Write-Host "Could not extract error details"
+                }
+                
                 Write-Host "Response: $($_.Exception.Response | ConvertTo-Json -Depth 3)"
             }
             return $null
