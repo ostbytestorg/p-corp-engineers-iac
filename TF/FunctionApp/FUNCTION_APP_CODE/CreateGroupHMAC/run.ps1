@@ -16,11 +16,47 @@ function Write-LogAndExit {
 }
 
 ###############################
-# HMAC Authentication Section #
+# Get Secret from Key Vault   #
 ###############################
 
-# Shared secret key (in production, this should come from KeyVault)
-$sharedSecretKey = "MyVerySecretKey123!@#"
+function Get-KeyVaultSecret {
+    param (
+        [string]$SecretName,
+        [string]$KeyVaultName = "sicratfkv001"
+    )
+    
+    try {
+        Write-Host "Retrieving secret from Key Vault: $SecretName from $KeyVaultName"
+        
+        # Get managed identity token for Key Vault
+        $tokenAuthUri = $env:IDENTITY_ENDPOINT + "?resource=https://vault.azure.net&api-version=2019-08-01"
+        $tokenResponse = Invoke-RestMethod -Method Get -Headers @{"X-IDENTITY-HEADER"="$env:IDENTITY_HEADER"} -Uri $tokenAuthUri
+        $accessToken = $tokenResponse.access_token
+        
+        # Get the secret from Key Vault
+        $secretUri = "https://$KeyVaultName.vault.azure.net/secrets/$SecretName?api-version=2016-10-01"
+        $response = Invoke-RestMethod -Uri $secretUri -Method GET -Headers @{Authorization = "Bearer $accessToken"}
+        return $response.value
+    }
+    catch {
+        Write-Host "Error retrieving secret from Key Vault: $_"
+        Write-Host "Exception details: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+# Get HMAC secret from Key Vault
+$sharedSecretKey = Get-KeyVaultSecret -SecretName "hmac"
+if (-not $sharedSecretKey) {
+    Write-LogAndExit -Message "Failed to retrieve HMAC secret from Key Vault" -StatusCode ([System.Net.HttpStatusCode]::InternalServerError)
+    return
+}
+
+Write-Host "Successfully retrieved secret from Key Vault"
+
+###############################
+# HMAC Authentication Section #
+###############################
 
 # Extract authentication headers
 $hmacTimestamp = $Request.Headers.'x-hmac-timestamp'
@@ -167,10 +203,6 @@ else {
     $accessToken = $tokenResponse.access_token
 }
 
-# Note: The Test-UserInApproverGroup function call was in the original code, but I don't see its definition.
-# Since we're now using HMAC authentication, we can remove this check or keep it as an additional security layer.
-# Removing it for now since we don't have the implementation:
-
 # Construct a unique mailNickname from groupName by removing spaces
 $mailNickname = ($groupName -replace '\s', '')
 
@@ -218,8 +250,7 @@ try {
         -ContentType "application/json" `
         -Headers @{ Authorization = "Bearer $accessToken" }
 
-    # Add audit information to response - note: since we're using HMAC now, we don't have user info
-    # You could include the requestor info in the payload if needed
+    # Add audit information to response
     $response | Add-Member -NotePropertyName "approvalTime" -NotePropertyValue (Get-Date -Format "o")
 }
 catch {
