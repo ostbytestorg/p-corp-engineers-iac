@@ -33,6 +33,24 @@ resource "azurerm_service_plan" "function_app_service_plan" {
   sku_name            = "B1"
 }
 
+# Add Log Analytics workspace
+resource "azurerm_log_analytics_workspace" "function_app_logs" {
+  name                = "${var.function_app_name}-logs"
+  location            = azurerm_resource_group.rg_function_app.location
+  resource_group_name = azurerm_resource_group.rg_function_app.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
+# Add Application Insights
+resource "azurerm_application_insights" "function_app_insights" {
+  name                = "${var.function_app_name}-insights"
+  location            = azurerm_resource_group.rg_function_app.location
+  resource_group_name = azurerm_resource_group.rg_function_app.name
+  workspace_id        = azurerm_log_analytics_workspace.function_app_logs.id
+  application_type    = "web"
+}
+
 # Add Key Vault resource with RBAC mode enabled
 resource "azurerm_key_vault" "function_app_key_vault" {
   name                        = var.key_vault_name
@@ -71,15 +89,22 @@ resource "azurerm_linux_function_app" "example_function_app" {
     cors {
       allowed_origins = ["https://portal.azure.com"]
     }
+    application_insights_connection_string = azurerm_application_insights.function_app_insights.connection_string
+    application_insights_key = azurerm_application_insights.function_app_insights.instrumentation_key
   }
 
   identity {
     type = "SystemAssigned"
   }
 
-  # Add an app setting to reference the key vault
+  # Add app settings with Application Insights and Key Vault info
   app_settings = {
     "KEYVAULT_ENDPOINT" = azurerm_key_vault.function_app_key_vault.vault_uri
+    "KEYVAULT_NAME" = azurerm_key_vault.function_app_key_vault.name
+    "APPINSIGHTS_INSTRUMENTATIONKEY" = azurerm_application_insights.function_app_insights.instrumentation_key
+    "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.function_app_insights.connection_string
+    "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
+    "FUNCTIONS_EXTENSION_VERSION" = "~4"
   }
 }
 
