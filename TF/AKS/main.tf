@@ -53,8 +53,6 @@ resource "azurerm_kubernetes_cluster" "aks" {
   
 network_profile {
   network_plugin    = "azure"
-  dns_service_ip    = "10.1.138.10"  # Changed from 10.0.137.10
-  service_cidr      = "10.1.138.0/24"  # Changed from 10.0.137.0/24
 }
 
   default_node_pool {

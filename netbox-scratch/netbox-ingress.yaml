@@ -1,0 +1,14 @@
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  hosts:
+    - host: ""  # Blank host to match any hostname or direct IP access
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: netbox
+              port:
+                number: 80
