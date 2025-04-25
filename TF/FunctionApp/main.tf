@@ -25,16 +25,6 @@ resource "azurerm_storage_container" "function_code_container" {
   container_access_type = "private"
 }
 
-# Upload the zipped file to the container
-resource "azurerm_storage_blob" "storage_blob_function" {
-  name                   = var.function_blob_name
-  source                 = var.zip_file_path
-  content_md5            = filemd5(var.zip_file_path)
-  storage_account_name   = azurerm_storage_account.function_app_storage_account.name
-  storage_container_name = var.storage_container_name
-  type                   = "Block"
-}
-
 resource "azurerm_service_plan" "function_app_service_plan" {
   name                = var.service_plan_name
   location            = azurerm_resource_group.rg_function_app.location
@@ -51,12 +41,6 @@ resource "azurerm_linux_function_app" "example_function_app" {
   storage_account_name          = azurerm_storage_account.function_app_storage_account.name
   storage_uses_managed_identity = true
   public_network_access_enabled = true
-
-  app_settings = {
-    "AzureWebJobsStorage__accountName" = azurerm_storage_account.function_app_storage_account.name
-    "HASH"                             = base64encode(filesha256(var.zip_file_path))
-    "WEBSITE_RUN_FROM_PACKAGE"         = azurerm_storage_blob.storage_blob_function.url
-  }
 
   site_config {
     application_stack {
