@@ -22,25 +22,69 @@ function Write-LogAndExit {
 function Get-KeyVaultSecret {
     param (
         [string]$SecretName,
-        [string]$KeyVaultName = "sicratfkv001"
+        [string]$KeyVaultName = $env:KEYVAULT_NAME # Use environment variable
     )
     
     try {
-        Write-Host "Retrieving secret from Key Vault: $SecretName from $KeyVaultName"
+        Write-Host "Starting Key Vault secret retrieval..."
+        Write-Host "KeyVault Name: $KeyVaultName"
+        Write-Host "Secret Name: $SecretName"
+        
+        # Check for required environment variables
+        Write-Host "Identity Endpoint: $($env:IDENTITY_ENDPOINT -ne $null ? 'Present' : 'Missing')"
+        Write-Host "Identity Header: $($env:IDENTITY_HEADER -ne $null ? 'Present' : 'Missing')"
+        
+        if (-not $env:IDENTITY_ENDPOINT -or -not $env:IDENTITY_HEADER) {
+            Write-Host "ERROR: Missing required environment variables for managed identity"
+            return $null
+        }
         
         # Get managed identity token for Key Vault
-        $tokenAuthUri = $env:IDENTITY_ENDPOINT + "?resource=https://vault.azure.net&api-version=2019-08-01"
-        $tokenResponse = Invoke-RestMethod -Method Get -Headers @{"X-IDENTITY-HEADER"="$env:IDENTITY_HEADER"} -Uri $tokenAuthUri
-        $accessToken = $tokenResponse.access_token
+        # Note: The resource parameter must be URL-encoded
+        $resource = [System.Web.HttpUtility]::UrlEncode("https://vault.azure.net")
+        $tokenAuthUri = "$($env:IDENTITY_ENDPOINT)?resource=$resource&api-version=2019-08-01"
+        Write-Host "Token Auth URI: $tokenAuthUri"
         
-        # Get the secret from Key Vault
-        $secretUri = "https://$KeyVaultName.vault.azure.net/secrets/$SecretName?api-version=2016-10-01"
-        $response = Invoke-RestMethod -Uri $secretUri -Method GET -Headers @{Authorization = "Bearer $accessToken"}
-        return $response.value
+        Write-Host "Requesting managed identity token..."
+        try {
+            $tokenResponse = Invoke-RestMethod -Method Get -Headers @{"X-IDENTITY-HEADER"="$env:IDENTITY_HEADER"} -Uri $tokenAuthUri
+            Write-Host "Token response received successfully"
+            $accessToken = $tokenResponse.access_token
+            Write-Host "Access token obtained successfully"
+        }
+        catch {
+            Write-Host "ERROR getting token: $($_.Exception.Message)"
+            if ($_.Exception.Response) {
+                Write-Host "Response Status Code: $($_.Exception.Response.StatusCode)"
+                Write-Host "Response: $($_.Exception.Response | ConvertTo-Json -Depth 3)"
+            }
+            return $null
+        }
+        
+        # Get the secret from Key Vault - Ensure api-version is included
+        $apiVersion = "7.0"
+        $secretUri = "https://$KeyVaultName.vault.azure.net/secrets/$SecretName?api-version=$apiVersion"
+        Write-Host "Secret URI: $secretUri"
+        
+        Write-Host "Requesting secret from Key Vault..."
+        try {
+            $response = Invoke-RestMethod -Uri $secretUri -Method GET -Headers @{Authorization = "Bearer $accessToken"}
+            Write-Host "Secret retrieved successfully"
+            return $response.value
+        }
+        catch {
+            Write-Host "ERROR getting secret: $($_.Exception.Message)"
+            if ($_.Exception.Response) {
+                Write-Host "Response Status Code: $($_.Exception.Response.StatusCode)"
+                Write-Host "Response: $($_.Exception.Response | ConvertTo-Json -Depth 3)"
+            }
+            return $null
+        }
     }
     catch {
-        Write-Host "Error retrieving secret from Key Vault: $_"
+        Write-Host "Unhandled exception in Get-KeyVaultSecret: $_"
         Write-Host "Exception details: $($_.Exception.Message)"
+        Write-Host "Stack trace: $($_.ScriptStackTrace)"
         return $null
     }
 }
