@@ -1,0 +1,21 @@
+# Disable worker initially to avoid crash loop
+worker:
+  enabled: false
+
+# Increase startup probe thresholds to avoid premature restarts
+startupProbe:
+  failureThreshold: 90
+
+# PostgreSQL configuration
+postgresql:
+  auth:
+    # Make sure these credentials match
+    username: netbox
+    password: netbox_pass
+    database: netbox
+
+# Ensure NetBox is configured to use the same credentials
+env:
+  DB_NAME: netbox
+  DB_USER: netbox
+  DB_PASSWORD: netbox_pass

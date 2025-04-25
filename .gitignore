@@ -12,3 +12,4 @@ __azurite_db*__.json
 
 # local files
 scratch.ps1
+/hmac-auth-poc/**
